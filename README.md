@@ -1,58 +1,135 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CMS Desa Ogan Ilir - Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend Laravel untuk mengelola portal website desa di Kabupaten Ogan Ilir. Aplikasi ini menjadi pusat administrasi konten, konfigurasi desa, widget, tema, pengguna, integrasi SIDESI, serta API publik yang dikonsumsi oleh aplikasi `public_web`.
 
-## About Laravel
+## Fungsi utama
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Dashboard CMS untuk developer, admin desa, dan editor.
+- Manajemen desa, pengguna, profil, styling, banner, halaman, artikel, galeri, dan widget.
+- Pengaturan modul per desa, termasuk artikel, halaman, galeri, statistik, anggaran, peta sebaran, perangkat desa, dan Desa Cantik.
+- Integrasi SIDESI Ogan Ilir untuk statistik penduduk, APBDes, absensi perangkat desa, fasilitas umum, dan bantuan.
+- API publik berbasis `village_id` untuk frontend Next.js.
+- Statistik pengunjung dan pencatatan view artikel.
+- Optimasi gambar upload untuk konten CMS.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP `^8.3`
+- Laravel `^13.8`
+- Livewire `^4.0`
+- PostgreSQL
+- Redis untuk session, cache, dan queue sesuai `.env.example`
+- Vite, Tailwind CSS, Quill, Tom Select, Leaflet, ApexCharts, Swiper, PhotoSwipe
 
-## Learning Laravel
+## Persiapan lokal
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Salin konfigurasi environment:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+cp .env.example .env
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Sesuaikan minimal nilai berikut:
 
-## Contributing
+```env
+APP_NAME="CMS Desa Ogan Ilir"
+APP_URL=http://127.0.0.1:8000
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=desa_cms
+DB_USERNAME=postgres
+DB_PASSWORD=
 
-## Code of Conduct
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+SIDESI_BASE_URL=https://sidesi.oganilirkab.go.id/api/v1
+SIDESI_APP_KEY=eofficedesa-OGANILIRBANGKIT
+```
 
-## Security Vulnerabilities
+Jika Redis belum tersedia di mesin lokal, ubah sementara `SESSION_DRIVER`, `CACHE_STORE`, dan `QUEUE_CONNECTION` ke driver yang tersedia.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Instalasi
 
-## License
+```bash
+composer install
+npm install
+php artisan key:generate
+php artisan migrate:fresh --seed
+npm run build
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Seeder awal membuat akun developer:
+
+- Email: `developer@desa.oganilirkab.go.id`
+- Username: `developer`
+- Password: `password`
+
+Seeder juga membuat data awal `Desa Tanjung Lubuk` sebagai contoh desa dengan `sidesi_village_id` yang siap dipakai untuk uji integrasi.
+
+## Menjalankan aplikasi
+
+Jalankan backend:
+
+```bash
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+Untuk pengembangan aset admin:
+
+```bash
+npm run dev
+```
+
+Atau jalankan server, queue listener, log pail, dan Vite sekaligus:
+
+```bash
+composer run dev
+```
+
+CMS dapat dibuka di:
+
+```text
+http://127.0.0.1:8000/login
+```
+
+## Endpoint publik
+
+Frontend publik membaca data dari endpoint berikut:
+
+- `GET /api/villages/{village}/site`
+- `GET /api/villages/{village}/posts`
+- `GET /api/villages/{village}/posts/{slug}`
+- `POST /api/villages/{village}/posts/{slug}/view`
+- `GET /api/villages/{village}/widgets`
+- `GET /api/villages/{village}/officials/today`
+- `GET /api/villages/{village}/officials/photo`
+- `GET /api/villages/{village}/budget`
+- `GET /api/villages/{village}/statistics`
+- `GET /api/villages/{village}/map/categories`
+- `GET /api/villages/{village}/map/facilities`
+- `GET /api/villages/{village}/map/facilities/{listing}`
+- `GET /api/villages/{village}/map/assistance`
+- `POST /api/villages/{village}/visitors`
+
+Cache payload publik dikontrol oleh:
+
+```env
+PUBLIC_SITE_CACHE_TTL=300
+PUBLIC_SITE_CACHE_STALE_TTL=1800
+EXTERNAL_DATA_CACHE_FRESH=120
+EXTERNAL_DATA_CACHE_STALE=1800
+PUBLIC_SITE_ARTICLE_LIMIT=12
+```
+
+## Validasi
+
+```bash
+php artisan test
+./vendor/bin/pint
+npm run build
+```
+
+Gunakan `php artisan route:list` saat perlu mengecek ulang route admin dan API publik.
