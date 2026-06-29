@@ -1,0 +1,116 @@
+{
+    "application": "CMS Desa",
+    "component": "Backend CMS",
+    "current_version": "1.4.0",
+    "framework": "Laravel 13",
+    "released_at": "2026-06-29",
+    "description": "Panel administrasi untuk mengelola desa, konten, pengguna, tema, widget, dan integrasi data publik.",
+    "releases": [
+        {
+            "version": "1.4.0",
+            "date": "2026-06-29",
+            "status": "stable",
+            "title": "Global Search CMS Desa",
+            "changes": [
+                "Menambahkan Global Search pada header CMS untuk mencari konten dan fitur aplikasi.",
+                "Memastikan hasil pencarian mengikuti role pengguna dan akses fitur desa aktif.",
+                "Mencegah fitur yang dinonaktifkan developer muncul pada hasil pencarian non-developer.",
+                "Menambahkan shortcut hasil pencarian ke halaman CMS yang sesuai."
+            ]
+        },
+        {
+            "version": "1.3.2",
+            "date": "2026-06-29",
+            "status": "stable",
+            "title": "Redesign Section Kabar Berita",
+            "changes": [
+                "Memperbarui metadata versi backend untuk patch redesign section Kabar Berita.",
+                "Mencatat perubahan tampilan beranda lintas theme agar halaman versi aplikasi tetap sinkron.",
+                "Menjaga integrasi CMS theme tetap kompatibel dengan redesign frontend."
+            ]
+        },
+        {
+            "version": "1.3.1",
+            "date": "2026-06-29",
+            "status": "stable",
+            "title": "Patch Theme Modern Style 2",
+            "changes": [
+                "Memperbarui metadata versi backend untuk patch penyempurnaan theme.",
+                "Menjaga integrasi pilihan Modern Style 2 di CMS tetap sinkron dengan frontend.",
+                "Mendokumentasikan perubahan font lokal, carousel banner, preload, dan layout widget bawah banner."
+            ]
+        },
+        {
+            "version": "1.3.0",
+            "date": "2026-06-29",
+            "status": "stable",
+            "title": "Theme Modern Style 2",
+            "changes": [
+                "Menambahkan pilihan Theme Modern Style 2 pada pengaturan styling website publik.",
+                "Menambahkan preset warna dan font Modern Style 2 yang otomatis diterapkan saat theme dipilih.",
+                "Memperluas validasi theme CMS agar Modern Style 2 dapat disimpan per desa.",
+                "Memperbarui metadata versi backend untuk rilis theme baru."
+            ]
+        },
+        {
+            "version": "1.2.2",
+            "date": "2026-06-25",
+            "status": "stable",
+            "title": "Pengendalian Fitur Public View",
+            "changes": [
+                "Menyesuaikan website publik agar fitur nonaktif tetap dapat dibuka melalui URL tetapi menampilkan informasi fitur belum tersedia.",
+                "Memastikan route detail publik mengikuti status fitur yang dikendalikan developer.",
+                "Menjaga navigasi public header agar tidak menampilkan menu internal menuju fitur nonaktif.",
+                "Memperbarui cache key public-site untuk memastikan metadata versi dan status fitur terbaru terbaca."
+            ]
+        },
+        {
+            "version": "1.2.1",
+            "date": "2026-06-25",
+            "status": "stable",
+            "title": "Penyempurnaan CMS Desa Cantik",
+            "changes": [
+                "Menambahkan upload thumbnail opsional untuk publikasi Desa Cantik berbasis URL dan FlipHTML.",
+                "Memperbaiki validasi kategori agar Publikasi dan Infografis dapat disimpan sesuai jenis kontennya.",
+                "Membersihkan payload simpan Desa Cantik agar field tampilan seperti koordinat tidak ikut masuk ke query database.",
+                "Menjaga validasi upload PDF dan gambar Desa Cantik maksimal 10MB."
+            ]
+        },
+        {
+            "version": "1.2.0",
+            "date": "2026-06-25",
+            "status": "stable",
+            "title": "Modul Desa Cantik",
+            "changes": [
+                "Menambahkan table kategori dan posting Desa Cantik.",
+                "Menambahkan admin manager Desa Cantik dengan kategori Publikasi dan Infografis.",
+                "Membatasi upload PDF dan gambar Desa Cantik maksimal 10MB.",
+                "Menginvalidasi cache publik setelah perubahan data Desa Cantik."
+            ]
+        },
+        {
+            "version": "1.1.0",
+            "date": "2026-06-25",
+            "status": "stable",
+            "title": "Peningkatan Operasional CMS Desa",
+            "changes": [
+                "Menambahkan filter, search, dan sort pada daftar artikel, widget, pengguna, referensi, dan manajemen desa.",
+                "Menyatukan input koordinat desa menjadi satu field latitude, longitude dengan validasi format.",
+                "Menambahkan halaman Profil User untuk update data akun dan penggantian password mandiri.",
+                "Memperbarui katalog dan aturan posisi widget agar mengikuti placement yang dikunci."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "date": "2026-06-23",
+            "status": "stable",
+            "title": "Rilis Dasar CMS Desa",
+            "changes": [
+                "Dukungan pengelolaan banyak desa.",
+                "Manajemen artikel, halaman, banner responsif, galeri, UMKM, pembangunan, dan unduhan.",
+                "Optimasi gambar WebP dan cache Redis dengan invalidasi realtime.",
+                "Integrasi data SIDESI, statistik pengunjung, role pengguna, dan impersonasi."
+            ]
+        }
+    ]
+}

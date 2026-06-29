@@ -1,0 +1,119 @@
+{
+    "application": "Website Desa",
+    "component": "Frontend Publik",
+    "current_version": "1.3.3",
+    "framework": "Next.js 16",
+    "released_at": "2026-06-29",
+    "description": "Website publik desa dengan dukungan multi-theme, data realtime, carousel, galeri, peta, statistik, dan modul informasi desa.",
+    "releases": [
+        {
+            "version": "1.3.3",
+            "date": "2026-06-29",
+            "status": "stable",
+            "title": "Theme Creative Branding",
+            "changes": [
+                "Menambahkan Theme Creative Branding dengan arah visual creative agency dan portfolio editorial.",
+                "Mendaftarkan renderer baru tanpa menghapus fitur, widget, navigasi, footer, analytics, dan route publik yang sudah ada.",
+                "Menambahkan preset warna dan font Creative Branding dari CMS Styling Website.",
+                "Menjaga section beranda untuk profil, shortcut, widget, berita, UMKM, pembangunan, dan galeri tetap mengikuti status fitur CMS."
+            ]
+        },
+        {
+            "version": "1.3.2",
+            "date": "2026-06-29",
+            "status": "stable",
+            "title": "Redesign Section Kabar Berita",
+            "changes": [
+                "Meredesign section Kabar Berita beranda pada Modern Style 1, Smooth Dynamic Style, dan Modern Style 2.",
+                "Memberi ciri layout berbeda pada tiap theme: editorial newsroom, rounded magazine, dan civic briefing.",
+                "Memperbaiki hierarchy kartu berita featured, metadata tanggal, kategori, dan CTA semua artikel.",
+                "Menjaga layout berita responsif pada mobile, tablet, dan desktop."
+            ]
+        },
+        {
+            "version": "1.3.1",
+            "date": "2026-06-29",
+            "status": "stable",
+            "title": "Penyempurnaan Theme Modern Style 2",
+            "changes": [
+                "Mengganti font Google CDN menjadi asset font lokal yang dimuat melalui next/font/local.",
+                "Menambahkan carousel banner khusus Modern Style 2 agar semua banner CMS tampil bergantian.",
+                "Menambahkan preload screen Modern Style 2 dengan karakter visual theme yang sama.",
+                "Merapikan spacing dan container widget bawah banner agar tidak bertumpuk dengan ringkasan data."
+            ]
+        },
+        {
+            "version": "1.3.0",
+            "date": "2026-06-29",
+            "status": "stable",
+            "title": "Theme Modern Style 2",
+            "changes": [
+                "Menambahkan Theme Modern Style 2 dengan komposisi visual civic dashboard editorial.",
+                "Menyajikan hero visual, panel akses cepat, ringkasan data, berita, UMKM, pembangunan, dan galeri dengan tampilan berbeda dari theme lain.",
+                "Menjaga section beranda dan shortcut agar tetap mengikuti status fitur dari CMS developer.",
+                "Mendaftarkan theme baru pada renderer frontend agar tersinkron dengan pilihan theme di CMS."
+            ]
+        },
+        {
+            "version": "1.2.2",
+            "date": "2026-06-25",
+            "status": "stable",
+            "title": "Pengendalian Fitur Public View",
+            "changes": [
+                "Menambahkan tampilan fallback fitur belum tersedia pada route public yang fiturnya dimatikan developer.",
+                "Menerapkan guard pada halaman list dan detail untuk Artikel, Halaman, Galeri, Unduhan, Desa Cantik, UMKM, Pembangunan, Peta Sebaran, Anggaran, dan Statistik.",
+                "Memfilter navigasi public header dan shortcut beranda agar menghormati status fitur.",
+                "Mencegah proxy data Peta Sebaran mengembalikan data saat fitur maps nonaktif."
+            ]
+        },
+        {
+            "version": "1.2.1",
+            "date": "2026-06-25",
+            "status": "stable",
+            "title": "Penyempurnaan Tampilan Desa Cantik",
+            "changes": [
+                "Menyederhanakan halaman Desa Cantik menjadi dua tab utama: Publikasi dan Infografis.",
+                "Menampilkan thumbnail publikasi pada daftar publikasi jika tersedia dari CMS.",
+                "Menambahkan lightbox pada detail Infografis Desa Cantik.",
+                "Memperbaiki layer lightbox agar tampil di atas header, widget, dan elemen theme lain."
+            ]
+        },
+        {
+            "version": "1.2.0",
+            "date": "2026-06-25",
+            "status": "stable",
+            "title": "Modul Desa Cantik",
+            "changes": [
+                "Menambahkan halaman Desa Cantik untuk publikasi dan infografis.",
+                "Menyajikan infografis dengan image viewer proporsional.",
+                "Menyajikan publikasi PDF, URL eksternal, dan FlipHTML sesuai tema website.",
+                "Menambahkan link Desa Cantik pada sitemap footer saat fitur aktif."
+            ]
+        },
+        {
+            "version": "1.1.0",
+            "date": "2026-06-25",
+            "status": "stable",
+            "title": "Peningkatan Tema, Widget, dan Freshness Website Publik",
+            "changes": [
+                "Menggunakan fetch request-time tanpa cache Next.js agar perubahan CMS tampil lebih cepat di website publik.",
+                "Menambahkan dukungan render widget publik lengkap termasuk posisi Beranda, footer, floating, header, dan below-banner.",
+                "Menambahkan theme Smooth Dynamic Style beserta preset warna dan font yang tersinkron dari CMS.",
+                "Memperbaiki tampilan announcement ticker dan spacing zona widget below-banner agar tidak tertimpa section layanan.",
+                "Menampilkan versi frontend aktif pada footer website publik dari metadata aplikasi."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "date": "2026-06-23",
+            "status": "stable",
+            "title": "Rilis Dasar Website Desa",
+            "changes": [
+                "Theme Modern Style 1 dan Smooth Dynamic Style.",
+                "Banner landscape dan portrait responsif.",
+                "Artikel, halaman, galeri lightbox, UMKM, pembangunan, anggaran, statistik, dan peta Leaflet.",
+                "Data CMS realtime dengan deduplikasi request dan caching backend."
+            ]
+        }
+    ]
+}

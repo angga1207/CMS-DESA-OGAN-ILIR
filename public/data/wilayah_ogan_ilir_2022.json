@@ -1,0 +1,1350 @@
+{
+  "sumber": {
+    "dokumen": "Keputusan Menteri Dalam Negeri Nomor 100.1.1-6117 Tahun 2022",
+    "tahun": 2022,
+    "provinsi": "Sumatera Selatan",
+    "kabupaten": "Ogan Ilir",
+    "kode_kabupaten": "16.10"
+  },
+  "ringkasan": {
+    "jumlah_kecamatan": 16,
+    "jumlah_kelurahan": 14,
+    "jumlah_desa": 227,
+    "total_desa_kelurahan": 241
+  },
+  "kecamatan": [
+    {
+      "kode": "16.10.01",
+      "nama": "Muara Kuang",
+      "jumlah_kelurahan": 1,
+      "jumlah_desa": 13,
+      "wilayah": [
+        {
+          "kode": "16.10.01.2005",
+          "nama": "Munggu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2006",
+          "nama": "Seri Menanti",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2007",
+          "nama": "Rantau Sialang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2008",
+          "nama": "Kuang Anyar",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2009",
+          "nama": "Kasah",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.1011",
+          "nama": "Muara Kuang",
+          "jenis": "Kelurahan"
+        },
+        {
+          "kode": "16.10.01.2012",
+          "nama": "Tanabang Ulu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2013",
+          "nama": "Seri Kembang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2014",
+          "nama": "Nagasari",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2015",
+          "nama": "Suka Cinta",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2016",
+          "nama": "Kelampadu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2029",
+          "nama": "Sukajadi",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2030",
+          "nama": "Ramakasih",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.01.2031",
+          "nama": "Tanabang Ilir",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.02",
+      "nama": "Tanjung Batu",
+      "jumlah_kelurahan": 2,
+      "jumlah_desa": 19,
+      "wilayah": [
+        {
+          "kode": "16.10.02.2010",
+          "nama": "Seri Bandung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2011",
+          "nama": "Seri Tanjung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2012",
+          "nama": "Tanjung Tambak",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2013",
+          "nama": "Senuro Timur",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2014",
+          "nama": "Tanjung Baru Petai",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2015",
+          "nama": "Tanjung Batu Seberang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2016",
+          "nama": "Pajar Bulan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.1017",
+          "nama": "Tanjung Batu",
+          "jenis": "Kelurahan"
+        },
+        {
+          "kode": "16.10.02.2018",
+          "nama": "Tanjung Atap",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2019",
+          "nama": "Tanjung Pinang I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2020",
+          "nama": "Limbang Jaya I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2021",
+          "nama": "Tanjung Laut",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2026",
+          "nama": "Burai",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2027",
+          "nama": "Sentul",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2031",
+          "nama": "Bangun Jaya",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2032",
+          "nama": "Tanjung Tambak Baru",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2033",
+          "nama": "Limbang Jaya II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2034",
+          "nama": "Senuro Barat",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2035",
+          "nama": "Tanjung Pinang II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.2036",
+          "nama": "Tanjung Atap Barat",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.02.1037",
+          "nama": "Tanjung Batu Timur",
+          "jenis": "Kelurahan"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.03",
+      "nama": "Tanjung Raja",
+      "jumlah_kelurahan": 4,
+      "jumlah_desa": 15,
+      "wilayah": [
+        {
+          "kode": "16.10.03.1001",
+          "nama": "Tanjung Raja",
+          "jenis": "Kelurahan"
+        },
+        {
+          "kode": "16.10.03.2002",
+          "nama": "Suka Pindah",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2007",
+          "nama": "Tanjung Temiang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2008",
+          "nama": "Seri Dalam",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2018",
+          "nama": "Kerinjing",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2019",
+          "nama": "Ulak Kerbau Baru",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2020",
+          "nama": "Ulak Kerbau Lama",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2021",
+          "nama": "Tanjung Agas",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2022",
+          "nama": "Siring Alam",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2023",
+          "nama": "Talang Balai Baru I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2024",
+          "nama": "Talang Balai Lama",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.1027",
+          "nama": "Tanjung Raja Barat",
+          "jenis": "Kelurahan"
+        },
+        {
+          "kode": "16.10.03.1028",
+          "nama": "Tanjung Raja Utara",
+          "jenis": "Kelurahan"
+        },
+        {
+          "kode": "16.10.03.2030",
+          "nama": "Skonjing",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2031",
+          "nama": "Tanjung Raja Selatan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2032",
+          "nama": "Belanti",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2033",
+          "nama": "Tanjung Harapan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.2034",
+          "nama": "Talang Balai Baru II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.03.1035",
+          "nama": "Tanjung Raja Timur",
+          "jenis": "Kelurahan"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.04",
+      "nama": "Indralaya",
+      "jumlah_kelurahan": 3,
+      "jumlah_desa": 17,
+      "wilayah": [
+        {
+          "kode": "16.10.04.2005",
+          "nama": "Lubuk Sakti",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2006",
+          "nama": "Tanjung Gelam",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2007",
+          "nama": "Tanjung Agung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2008",
+          "nama": "Tanjung Sejaro",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2009",
+          "nama": "Sakatiga Seberang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2010",
+          "nama": "Muara P. Ulu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2012",
+          "nama": "Tanjung Seteko",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2013",
+          "nama": "Saka Tiga",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2014",
+          "nama": "Ulak Banding",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2015",
+          "nama": "Muara P. Ilir",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2016",
+          "nama": "Talang Aur",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2017",
+          "nama": "Ulak Bedil",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2018",
+          "nama": "Penyandingan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2019",
+          "nama": "Sudimampir",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2027",
+          "nama": "Ulak Segelung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2028",
+          "nama": "Sejaro Sakti",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.2029",
+          "nama": "Tunas Aur",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.04.1030",
+          "nama": "Indralaya Raya",
+          "jenis": "Kelurahan"
+        },
+        {
+          "kode": "16.10.04.1031",
+          "nama": "Indralaya Indah",
+          "jenis": "Kelurahan"
+        },
+        {
+          "kode": "16.10.04.1032",
+          "nama": "Indralaya Mulia",
+          "jenis": "Kelurahan"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.05",
+      "nama": "Pemulutan",
+      "jumlah_kelurahan": 0,
+      "jumlah_desa": 25,
+      "wilayah": [
+        {
+          "kode": "16.10.05.2015",
+          "nama": "Aurstanding",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2016",
+          "nama": "Sukarami",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2017",
+          "nama": "Muara Dua",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2018",
+          "nama": "Palu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2019",
+          "nama": "Teluk Kecapi",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2020",
+          "nama": "Pelabuhan Dalam",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2021",
+          "nama": "Pemulutan Ulu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2022",
+          "nama": "Pemulutan Ilir",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2023",
+          "nama": "Sungai Rasau",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2024",
+          "nama": "Ibul Besar I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2025",
+          "nama": "Pegayut",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2029",
+          "nama": "S. Pelabuhan Dlm",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2030",
+          "nama": "Ibul Besar II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2031",
+          "nama": "Ibul Besar III",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2032",
+          "nama": "Mekar Jaya",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2033",
+          "nama": "Kedukan Bujang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2034",
+          "nama": "Rawa Jaya",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2035",
+          "nama": "Babatan Saudagar",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2036",
+          "nama": "Tanjung Pasir",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2037",
+          "nama": "Harapan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2038",
+          "nama": "Pipa Putih",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2039",
+          "nama": "Sungai Buaya",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2040",
+          "nama": "Muara Baru",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2041",
+          "nama": "Sembadak",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.05.2042",
+          "nama": "Lebung Jangkar",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.06",
+      "nama": "Rantau Alai",
+      "jumlah_kelurahan": 0,
+      "jumlah_desa": 13,
+      "wilayah": [
+        {
+          "kode": "16.10.06.2006",
+          "nama": "Sirah Pulau Kilip",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2011",
+          "nama": "Kelampaian",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2012",
+          "nama": "Sukananti",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2013",
+          "nama": "Sukamarga",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2014",
+          "nama": "Rantau Alai",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2015",
+          "nama": "Kerta Bayang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2016",
+          "nama": "Tanjung Mas",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2017",
+          "nama": "Talang Sari",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2018",
+          "nama": "Lebung Bandung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2020",
+          "nama": "Sanding Marga",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2021",
+          "nama": "Sukamaju",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2022",
+          "nama": "Mekar Sari",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.06.2023",
+          "nama": "Sukananti Baru",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.07",
+      "nama": "Indralaya Utara",
+      "jumlah_kelurahan": 1,
+      "jumlah_desa": 15,
+      "wilayah": [
+        {
+          "kode": "16.10.07.2001",
+          "nama": "Tanjung Pering",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2002",
+          "nama": "Bakung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2003",
+          "nama": "Lorok",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2004",
+          "nama": "Parit",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2005",
+          "nama": "Payakabung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2006",
+          "nama": "Sungai Rambutan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2007",
+          "nama": "Purna Jaya",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2008",
+          "nama": "Soak Batok",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2009",
+          "nama": "Tanjung Baru",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2010",
+          "nama": "Tanjung Pule",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2011",
+          "nama": "Permata Baru",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2012",
+          "nama": "Suka Mulia",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2013",
+          "nama": "Pulau Kabai",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2014",
+          "nama": "Pulau Semambu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.2015",
+          "nama": "Palem Raya",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.07.1016",
+          "nama": "Timbangan",
+          "jenis": "Kelurahan"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.08",
+      "nama": "Indralaya Selatan",
+      "jumlah_kelurahan": 0,
+      "jumlah_desa": 14,
+      "wilayah": [
+        {
+          "kode": "16.10.08.2001",
+          "nama": "Mandi Angin",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2002",
+          "nama": "Tanjung Lubuk",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2003",
+          "nama": "Tebing Gerinting Selatan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2004",
+          "nama": "Arisan Gading",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2005",
+          "nama": "Tanjung Dayang Selatan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2006",
+          "nama": "Beti",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2007",
+          "nama": "Meranjat I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2008",
+          "nama": "Meranjat Ilir",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2009",
+          "nama": "Meranjat II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2010",
+          "nama": "Sukaraja Lama",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2011",
+          "nama": "Sukaraja Baru",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2012",
+          "nama": "Tebing Gerinting Utara",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2013",
+          "nama": "Tanjung Dayang Utara",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.08.2014",
+          "nama": "Meranjat III",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.09",
+      "nama": "Pemulutan Selatan",
+      "jumlah_kelurahan": 0,
+      "jumlah_desa": 15,
+      "wilayah": [
+        {
+          "kode": "16.10.09.2001",
+          "nama": "Pematang Bangsal",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2002",
+          "nama": "Maya Pati",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2003",
+          "nama": "Sungai Lebung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2005",
+          "nama": "Kapuk",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2006",
+          "nama": "Ulak Aurstanding",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2007",
+          "nama": "Maju Jaya",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2008",
+          "nama": "Naikan Tembakang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2009",
+          "nama": "Segayam",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2010",
+          "nama": "Cahaya Marga",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2011",
+          "nama": "S. Lebung Ulu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2012",
+          "nama": "Sungai Keli",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2013",
+          "nama": "Lebak Pering",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2014",
+          "nama": "Sungai Ondok",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2015",
+          "nama": "Harimau Tandang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.09.2016",
+          "nama": "Pematang Bungur",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.10",
+      "nama": "Pemulutan Barat",
+      "jumlah_kelurahan": 0,
+      "jumlah_desa": 11,
+      "wilayah": [
+        {
+          "kode": "16.10.10.2001",
+          "nama": "Suka Merindu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.10.2002",
+          "nama": "Sarang Lang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.10.2003",
+          "nama": "Kamal",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.10.2004",
+          "nama": "Pulau Negara",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.10.2005",
+          "nama": "Talang Pangeran Ulu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.10.2006",
+          "nama": "Ulak Kembahang I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.10.2007",
+          "nama": "Ulak Petangisan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.10.2008",
+          "nama": "Sribanding",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.10.2009",
+          "nama": "Ulak Kembahang II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.10.2010",
+          "nama": "Talang Pangeran Ilir",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.10.2011",
+          "nama": "Arisan Jaya",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.11",
+      "nama": "Rantau Panjang",
+      "jumlah_kelurahan": 0,
+      "jumlah_desa": 12,
+      "wilayah": [
+        {
+          "kode": "16.10.11.2001",
+          "nama": "Kotadaro I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2002",
+          "nama": "Ketapang I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2003",
+          "nama": "Rantau Panjang Ilir",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2004",
+          "nama": "Jagaraja",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2005",
+          "nama": "Jagalano",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2006",
+          "nama": "Sejangko I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2007",
+          "nama": "Kota Daro II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2008",
+          "nama": "Sungai Rotan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2009",
+          "nama": "Rantau Panjang Ulu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2010",
+          "nama": "Ketapang II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2011",
+          "nama": "Sejangko II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.11.2012",
+          "nama": "Arisan Deras",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.12",
+      "nama": "Sungai Pinang",
+      "jumlah_kelurahan": 1,
+      "jumlah_desa": 12,
+      "wilayah": [
+        {
+          "kode": "16.10.12.2001",
+          "nama": "Serijabo",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.2002",
+          "nama": "Sungai Pinang II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.2003",
+          "nama": "Talang Dukun",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.2004",
+          "nama": "Tanjung Serian",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.2005",
+          "nama": "Penyandingan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.2006",
+          "nama": "Sungai Pinang III",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.1007",
+          "nama": "Sungai Pinang",
+          "jenis": "Kelurahan"
+        },
+        {
+          "kode": "16.10.12.2008",
+          "nama": "Pinang Jaya",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.2009",
+          "nama": "Sungai Pinang I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.2010",
+          "nama": "Pinang Mas",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.2011",
+          "nama": "S. Pinang Lagati",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.2012",
+          "nama": "S. Pinang Nibung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.12.2013",
+          "nama": "Seri Jabo Baru",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.13",
+      "nama": "Kandis",
+      "jumlah_kelurahan": 0,
+      "jumlah_desa": 12,
+      "wilayah": [
+        {
+          "kode": "16.10.13.2001",
+          "nama": "Lubuk Rukam",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2002",
+          "nama": "Tanjung Alai",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2003",
+          "nama": "Kandis I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2004",
+          "nama": "Kumbang Ulu",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2005",
+          "nama": "Kumbang Ilir",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2006",
+          "nama": "Miji",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2007",
+          "nama": "Santapan Barat",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2008",
+          "nama": "Pandan Arang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2009",
+          "nama": "Muara Kumbang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2010",
+          "nama": "Kandis II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2011",
+          "nama": "Santapan Timur",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.13.2012",
+          "nama": "Lubuk Segonang",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.14",
+      "nama": "Rambang Kuang",
+      "jumlah_kelurahan": 0,
+      "jumlah_desa": 13,
+      "wilayah": [
+        {
+          "kode": "16.10.14.2001",
+          "nama": "Ibul Dalam",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2002",
+          "nama": "Beringin Dalam",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2003",
+          "nama": "Kuang Dalam Barat",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2004",
+          "nama": "Lubuk Tunggal",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2005",
+          "nama": "Ulak Segara",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2006",
+          "nama": "Tanjung Bulan",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2007",
+          "nama": "Tambang Rambang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2008",
+          "nama": "Sukananti",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2009",
+          "nama": "Kayu Ara",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2010",
+          "nama": "Tanjung Miring",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2011",
+          "nama": "Sunur",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2012",
+          "nama": "Kuang Dalam Timur",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.14.2013",
+          "nama": "Tangai",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.15",
+      "nama": "Lubuk Keliat",
+      "jumlah_kelurahan": 0,
+      "jumlah_desa": 10,
+      "wilayah": [
+        {
+          "kode": "16.10.15.2001",
+          "nama": "Ulak Kembahang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.15.2002",
+          "nama": "Lubuk Keliat",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.15.2003",
+          "nama": "Embacang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.15.2004",
+          "nama": "Kasih Raja",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.15.2005",
+          "nama": "Talang Tengah Darat",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.15.2006",
+          "nama": "Betung II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.15.2007",
+          "nama": "Ketiau",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.15.2008",
+          "nama": "Payalingkung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.15.2009",
+          "nama": "Betung I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.15.2010",
+          "nama": "Talang Tengah Laut",
+          "jenis": "Desa"
+        }
+      ]
+    },
+    {
+      "kode": "16.10.16",
+      "nama": "Payaraman",
+      "jumlah_kelurahan": 2,
+      "jumlah_desa": 11,
+      "wilayah": [
+        {
+          "kode": "16.10.16.2001",
+          "nama": "Tebedak I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.2002",
+          "nama": "Lubuk Bandung",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.2003",
+          "nama": "Talang Seleman",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.2004",
+          "nama": "Tebedak II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.2005",
+          "nama": "Tanjung lalang",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.2006",
+          "nama": "Seri Kembang I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.2007",
+          "nama": "Rengas I",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.2008",
+          "nama": "Paya Besar",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.2009",
+          "nama": "Rengas II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.2010",
+          "nama": "Seri Kembang II",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.2011",
+          "nama": "Seri Kembang III",
+          "jenis": "Desa"
+        },
+        {
+          "kode": "16.10.16.1012",
+          "nama": "Payaraman Barat",
+          "jenis": "Kelurahan"
+        },
+        {
+          "kode": "16.10.16.1013",
+          "nama": "Payaraman Timur",
+          "jenis": "Kelurahan"
+        }
+      ]
+    }
+  ]
+}

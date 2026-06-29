@@ -1,0 +1,148 @@
+<?php
+
+return [
+    'whatsapp_button' => [
+        'label' => 'WhatsApp Flying Button',
+        'description' => 'Tombol WhatsApp mengambang untuk menghubungi layanan desa.',
+        'icon' => 'fa-brands fa-whatsapp',
+        'default_placement' => 'floating_right',
+        'placements' => ['floating_left', 'floating_right'],
+        'fields' => [
+            'phone' => ['label' => 'Nomor WhatsApp', 'type' => 'text', 'rule' => 'required|string|max:30', 'placeholder' => '6281234567890'],
+            'button_label' => ['label' => 'Label Tombol', 'type' => 'text', 'rule' => 'required|string|max:80', 'default' => 'Hubungi Desa'],
+            'message' => ['label' => 'Pesan Awal', 'type' => 'textarea', 'rule' => 'nullable|string|max:500', 'default' => 'Halo, saya ingin bertanya mengenai layanan desa.'],
+        ],
+    ],
+    'visitor_statistics' => [
+        'label' => 'Statistik Pengunjung',
+        'description' => 'Menampilkan jumlah pengunjung unik dan total kunjungan website.',
+        'icon' => 'fa-solid fa-chart-line',
+        'default_placement' => 'footer',
+        'placements' => ['footer'],
+        'fields' => [
+            'period_days' => ['label' => 'Periode', 'type' => 'select', 'rule' => 'required|in:1,7,30,90', 'default' => '30', 'options' => ['1' => 'Hari ini', '7' => '7 hari', '30' => '30 hari', '90' => '90 hari']],
+            'show_unique' => ['label' => 'Tampilkan Pengunjung Unik', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+            'show_total' => ['label' => 'Tampilkan Total Kunjungan', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+        ],
+    ],
+    'prayer_schedule' => [
+        'label' => 'Jadwal Salat',
+        'description' => 'Jadwal salat harian dari eQuran berdasarkan kabupaten/kota.',
+        'icon' => 'fa-solid fa-mosque',
+        'default_placement' => 'header',
+        'placements' => ['header'],
+        'fields' => [
+            'provinsi' => ['label' => 'Provinsi', 'type' => 'text', 'rule' => 'required|string|max:120', 'default' => 'Sumatera Selatan'],
+            'kabkota' => ['label' => 'Kabupaten/Kota', 'type' => 'text', 'rule' => 'required|string|max:120', 'default' => 'Kab. Ogan ILIR'],
+            'bulan' => ['label' => 'Bulan', 'type' => 'number', 'rule' => 'required|integer|between:1,12', 'default' => (string) date('n')],
+            'tahun' => ['label' => 'Tahun', 'type' => 'number', 'rule' => 'required|integer|between:2000,2100', 'default' => (string) date('Y')],
+        ],
+    ],
+    'weather_information' => [
+        'label' => 'Informasi Cuaca',
+        'description' => 'Prakiraan cuaca desa dari BMKG berdasarkan kode wilayah adm4.',
+        'icon' => 'fa-solid fa-cloud-sun',
+        'default_placement' => 'header',
+        'placements' => ['header'],
+        'fields' => [
+            'adm4' => ['label' => 'Kode Wilayah BMKG (ADM4)', 'type' => 'text', 'rule' => ['required', 'string', 'regex:/^\d{2}\.\d{2}\.\d{2}\.\d{4}$/'], 'default' => ''],
+            'forecast_days' => ['label' => 'Jumlah Hari Prakiraan', 'type' => 'select', 'rule' => 'required|in:1,3,5,7', 'default' => '3', 'options' => ['1' => '1 hari', '3' => '3 hari', '5' => '5 hari', '7' => '7 hari']],
+        ],
+    ],
+    'announcement_ticker' => [
+        'label' => 'Pengumuman Berjalan',
+        'description' => 'Teks pengumuman penting yang berjalan di bagian atas website.',
+        'icon' => 'fa-solid fa-bullhorn',
+        'default_placement' => 'header',
+        'placements' => ['header', 'below_banner'],
+        'fields' => [
+            'text' => ['label' => 'Isi Pengumuman', 'type' => 'textarea', 'rule' => 'required|string|max:500'],
+            'link_url' => ['label' => 'Tautan', 'type' => 'url', 'rule' => 'nullable|url|max:2048'],
+            'link_label' => ['label' => 'Label Tautan', 'type' => 'text', 'rule' => 'nullable|string|max:80', 'default' => 'Selengkapnya'],
+        ],
+    ],
+    'office_hours' => [
+        'label' => 'Jam Pelayanan',
+        'description' => 'Informasi jadwal buka kantor dan layanan masyarakat.',
+        'icon' => 'fa-solid fa-clock',
+        'default_placement' => 'footer',
+        'placements' => ['footer'],
+        'fields' => [
+            'weekdays' => ['label' => 'Senin - Jumat', 'type' => 'text', 'rule' => 'required|string|max:120', 'default' => '08.00 - 15.30 WIB'],
+            'saturday' => ['label' => 'Sabtu', 'type' => 'text', 'rule' => 'nullable|string|max:120', 'default' => 'Tutup'],
+            'sunday' => ['label' => 'Minggu', 'type' => 'text', 'rule' => 'nullable|string|max:120', 'default' => 'Tutup'],
+            'note' => ['label' => 'Catatan', 'type' => 'textarea', 'rule' => 'nullable|string|max:300'],
+        ],
+    ],
+    'complaint_link' => [
+        'label' => 'Tautan Pengaduan',
+        'description' => 'Akses cepat menuju formulir atau kanal pengaduan masyarakat.',
+        'icon' => 'fa-solid fa-comment-dots',
+        'default_placement' => 'floating_left',
+        'placements' => ['floating_left', 'floating_right', 'footer'],
+        'fields' => [
+            'button_label' => ['label' => 'Label Tombol', 'type' => 'text', 'rule' => 'required|string|max:80', 'default' => 'Sampaikan Pengaduan'],
+            'url' => ['label' => 'URL Pengaduan', 'type' => 'url', 'rule' => 'required|url|max:2048'],
+            'open_new_tab' => ['label' => 'Buka di Tab Baru', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+        ],
+    ],
+    'population_summary' => [
+        'label' => 'Ringkasan Penduduk',
+        'description' => 'Jumlah penduduk, keluarga, laki-laki, dan perempuan dari data terbaru.',
+        'icon' => 'fa-solid fa-people-group',
+        'default_placement' => 'home',
+        'placements' => ['home'],
+        'fields' => [
+            'show_families' => ['label' => 'Tampilkan Jumlah KK', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+            'show_gender' => ['label' => 'Tampilkan Komposisi Gender', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+        ],
+    ],
+    'village_officials' => [
+        'label' => 'Perangkat Desa',
+        'description' => 'Menampilkan daftar perangkat desa dan status absensi hari ini dari SIDESI.',
+        'icon' => 'fa-solid fa-id-badge',
+        'default_placement' => 'home',
+        'placements' => ['home'],
+        'fields' => [
+            'limit' => ['label' => 'Jumlah Perangkat', 'type' => 'select', 'rule' => 'required|in:3,6,9,12,all', 'default' => '6', 'options' => ['3' => '3 orang', '6' => '6 orang', '9' => '9 orang', '12' => '12 orang', 'all' => 'Tampilkan semua perangkat']],
+            'show_status' => ['label' => 'Tampilkan Status Absensi', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+            'show_photos' => ['label' => 'Tampilkan Foto', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+        ],
+    ],
+    'village_statistics' => [
+        'label' => 'Statistik Penduduk Desa',
+        'description' => 'Ringkasan dan distribusi penduduk berdasarkan pekerjaan, pendidikan, serta usia dari SIDESI.',
+        'icon' => 'fa-solid fa-chart-column',
+        'default_placement' => 'home',
+        'placements' => ['home'],
+        'fields' => [
+            'show_occupations' => ['label' => 'Tampilkan Statistik Pekerjaan', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+            'show_education' => ['label' => 'Tampilkan Statistik Pendidikan', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+            'show_ages' => ['label' => 'Tampilkan Statistik Usia', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+        ],
+    ],
+    'village_budget' => [
+        'label' => 'Transparansi Anggaran',
+        'description' => 'Ringkasan APBDes, realisasi, pendapatan, dan pembelanjaan dari SIDESI.',
+        'icon' => 'fa-solid fa-chart-pie',
+        'default_placement' => 'home',
+        'placements' => ['home'],
+        'fields' => [
+            'year' => ['label' => 'Tahun Anggaran', 'type' => 'number', 'rule' => 'required|integer|between:2000,2100', 'default' => (string) date('Y')],
+            'show_pelaksanaan' => ['label' => 'Tampilkan Pelaksanaan', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+            'show_pembelanjaan' => ['label' => 'Tampilkan Pembelanjaan', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+            'show_pendapatan' => ['label' => 'Tampilkan Pendapatan', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+        ],
+    ],
+    'latest_articles' => [
+        'label' => 'Artikel Terbaru',
+        'description' => 'Daftar singkat artikel terbaru yang telah diterbitkan.',
+        'icon' => 'fa-solid fa-newspaper',
+        'default_placement' => 'sidebar',
+        'placements' => ['sidebar'],
+        'fields' => [
+            'limit' => ['label' => 'Jumlah Artikel', 'type' => 'select', 'rule' => 'required|in:3,5,8,10', 'default' => '5', 'options' => ['3' => '3 artikel', '5' => '5 artikel', '8' => '8 artikel', '10' => '10 artikel']],
+            'show_thumbnail' => ['label' => 'Tampilkan Thumbnail', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
+        ],
+    ],
+];
