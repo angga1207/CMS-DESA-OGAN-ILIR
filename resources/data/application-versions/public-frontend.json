@@ -1,11 +1,35 @@
 {
     "application": "Website Desa",
     "component": "Frontend Publik",
-    "current_version": "1.3.3",
+    "current_version": "1.5.0",
     "framework": "Next.js 16",
-    "released_at": "2026-06-29",
+    "released_at": "2026-07-06",
     "description": "Website publik desa dengan dukungan multi-theme, data realtime, carousel, galeri, peta, statistik, dan modul informasi desa.",
     "releases": [
+        {
+            "version": "1.5.0",
+            "date": "2026-07-06",
+            "status": "stable",
+            "title": "BUMDES, Galeri UMKM, dan Pencarian Publik",
+            "changes": [
+                "Menambahkan halaman daftar dan detail BUMDES publik beserta galeri foto.",
+                "Menampilkan galeri foto UMKM bergaya detail produk marketplace di semua theme.",
+                "Menambahkan pencarian dan tanggal unggah pada halaman Download publik.",
+                "Menjaga versi frontend di footer tetap berasal dari build frontend lokal per desa."
+            ]
+        },
+        {
+            "version": "1.4.0",
+            "date": "2026-07-02",
+            "status": "stable",
+            "title": "Penyempurnaan Detail Publik dan Widget",
+            "changes": [
+                "Menampilkan nomor WhatsApp, dusun, dan jumlah pekerja pada detail UMKM publik.",
+                "Menampilkan data tambahan pembangunan seperti status, sumber dana, anggaran, volume, lokasi, dan progres.",
+                "Mengambil versi frontend footer dari build frontend lokal agar tiap desa dapat berbeda versi.",
+                "Memperbaiki marquee Widget Pengumuman dan memastikan Home Shortcut dapat disembunyikan di semua theme."
+            ]
+        },
         {
             "version": "1.3.3",
             "date": "2026-06-29",

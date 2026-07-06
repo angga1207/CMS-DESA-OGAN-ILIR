@@ -1,11 +1,36 @@
 {
     "application": "CMS Desa",
     "component": "Backend CMS",
-    "current_version": "1.4.0",
+    "current_version": "1.5.0",
     "framework": "Laravel 13",
-    "released_at": "2026-06-29",
+    "released_at": "2026-07-06",
     "description": "Panel administrasi untuk mengelola desa, konten, pengguna, tema, widget, dan integrasi data publik.",
     "releases": [
+        {
+            "version": "1.5.0",
+            "date": "2026-07-06",
+            "status": "stable",
+            "title": "Peningkatan Modul, Sorting, dan Pencarian",
+            "changes": [
+                "Menambahkan provisioning otomatis Admin Desa dan Editor Desa saat desa baru dibuat.",
+                "Memindahkan Menu Dinamis ke komponen terpisah serta menambahkan drag and drop untuk menu dan sub menu.",
+                "Menambahkan tanggal publikasi artikel, pengelompokan widget aktif berdasarkan posisi, dan drag and drop urutan widget.",
+                "Menambahkan dukungan multi-foto UMKM, modul BUMDES, serta pencarian pada daftar Halaman, Download, Desa Cantik, UMKM, BUMDES, dan Pembangunan.",
+                "Mengganti label Tautan Pengaduan menjadi Widget Melayang agar dapat digunakan secara umum."
+            ]
+        },
+        {
+            "version": "1.4.1",
+            "date": "2026-07-02",
+            "status": "stable",
+            "title": "Kontrol Home Shortcut",
+            "changes": [
+                "Menambahkan toggle Tampilkan Home Shortcut pada pengaturan Styling Website.",
+                "Menyimpan status aktif/nonaktif Home Shortcut per desa melalui site_settings.",
+                "Mengosongkan payload shortcuts publik saat fitur Home Shortcut dimatikan.",
+                "Menambahkan validasi dan test agar perubahan toggle menginvalidasi cache public site dengan benar."
+            ]
+        },
         {
             "version": "1.4.0",
             "date": "2026-06-29",

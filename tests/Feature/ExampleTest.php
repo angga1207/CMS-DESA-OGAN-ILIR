@@ -53,8 +53,15 @@ class ExampleTest extends TestCase
         $this->assertTrue(Schema::hasTable('village_features'));
         $this->assertTrue(Schema::hasTable('village_visitor_daily_stats'));
         $this->assertTrue(Schema::hasTable('village_widgets'));
+        $this->assertTrue(Schema::hasTable('business_photos'));
+        $this->assertTrue(Schema::hasTable('bumdes'));
+        $this->assertTrue(Schema::hasTable('bumdes_categories'));
+        $this->assertTrue(Schema::hasTable('bumdes_photos'));
         $this->assertTrue(Schema::hasColumns('development_projects', ['latitude', 'longitude']));
         $this->assertTrue(Schema::hasColumns('businesses', ['latitude', 'longitude', 'instagram_url', 'facebook_url', 'tiktok_url']));
+        $this->assertTrue(Schema::hasColumns('business_photos', ['village_id', 'business_id', 'image_url', 'sort_order']));
+        $this->assertTrue(Schema::hasColumns('bumdes', ['manager_name', 'latitude', 'longitude', 'instagram_url', 'facebook_url', 'tiktok_url']));
+        $this->assertTrue(Schema::hasColumns('bumdes_photos', ['village_id', 'bumdes_id', 'image_url', 'sort_order']));
 
         $response = $this->get('/');
 
@@ -97,7 +104,8 @@ class ExampleTest extends TestCase
             ->assertSee('Kelola Konten')
             ->assertSee('Data Desa')
             ->assertSee('Referensi')
-            ->assertSee('Sistem');
+            ->assertSee('Sistem')
+            ->assertSeeInOrder(['Sistem', 'Pengaturan Desa', 'Styling Website', 'Menu Dinamis', 'Widget Website', 'Pengguna']);
     }
 
     public function test_global_search_respects_role_and_feature_access(): void
@@ -200,6 +208,7 @@ class ExampleTest extends TestCase
             ->assertStatus(200)
             ->assertSee('Tambah Artikel')
             ->assertSee('Konten')
+            ->assertSee('Tanggal Publikasi')
             ->assertSee('quill-editor', false)
             ->assertDontSee('label class="text-sm font-bold">Slug', false);
 
@@ -258,6 +267,7 @@ class ExampleTest extends TestCase
             ->assertSee('Informasi Cuaca')
             ->assertSee('Statistik Penduduk Desa')
             ->assertSee('Transparansi Anggaran')
+            ->assertSee('Widget Aktif')
             ->assertDontSee('Media Sosial Desa')
             ->assertDontSee('Lokasi Kantor Desa')
             ->assertDontSee('Kontak Darurat');
@@ -292,6 +302,7 @@ class ExampleTest extends TestCase
             ->set('settings.theme_secondary', '#234567')
             ->set('settings.theme_tertiary', '#abcdef')
             ->set('settings.font_style', 'elegant')
+            ->set('settings.home_shortcuts_enabled', false)
             ->set('shortcutLinks.0.label', 'Tentang Desa')
             ->set('shortcutLinks.0.url', '/tentang')
             ->call('save')
@@ -301,6 +312,7 @@ class ExampleTest extends TestCase
         $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'theme_primary', 'value' => '#123456']);
         $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'site_theme', 'value' => 'smooth-dynamic-style']);
         $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'font_style', 'value' => 'elegant']);
+        $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'home_shortcuts_enabled', 'value' => '0', 'type' => 'boolean']);
         $shortcuts = json_decode((string) DB::table('site_settings')->where('village_id', $villageId)->where('key', 'home_shortcuts')->value('value'), true);
         $this->assertSame('Tentang Desa', $shortcuts[0]['label']);
         $this->assertSame('/tentang', $shortcuts[0]['url']);
@@ -365,6 +377,67 @@ class ExampleTest extends TestCase
             ->assertDontSee('Administrator Desa Tanjung Lubuk');
     }
 
+    public function test_village_provisioner_creates_default_admin_and_editor_users(): void
+    {
+        $this->seed();
+
+        $villageId = (int) DB::table('villages')->where('slug', 'desa-tanjung-lubuk')->value('id');
+        $admin = User::query()
+            ->where('village_id', $villageId)
+            ->where('role', 'admin_desa')
+            ->first();
+        $editor = User::query()
+            ->where('village_id', $villageId)
+            ->where('role', 'editor')
+            ->first();
+
+        $this->assertNotNull($admin);
+        $this->assertNotNull($editor);
+        $this->assertSame('admintanjunglubuk', $admin->username);
+        $this->assertSame('editortanjunglubuk', $editor->username);
+        $this->assertTrue(Hash::check('D3saOganIliR_@', $admin->password));
+        $this->assertTrue(Hash::check('D3saOganIliR_@', $editor->password));
+    }
+
+    public function test_user_manager_requires_matching_password_confirmation(): void
+    {
+        $this->seed();
+        $developer = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->value('id');
+
+        $this->actingAs($developer);
+
+        Livewire::test('admin.user-manager')
+            ->call('create')
+            ->set('form.name', 'Editor Konfirmasi')
+            ->set('form.username', 'editor_konfirmasi')
+            ->set('form.email', 'editor.konfirmasi@test.local')
+            ->set('form.role', 'editor')
+            ->set('form.village_id', $villageId)
+            ->set('form.password', 'password-rahasia')
+            ->set('form.password_confirmation', 'password-berbeda')
+            ->call('save')
+            ->assertHasErrors(['form.password']);
+
+        $this->assertDatabaseMissing('users', ['username' => 'editor_konfirmasi']);
+
+        Livewire::test('admin.user-manager')
+            ->call('create')
+            ->set('form.name', 'Editor Konfirmasi')
+            ->set('form.username', 'editor_konfirmasi')
+            ->set('form.email', 'editor.konfirmasi@test.local')
+            ->set('form.role', 'editor')
+            ->set('form.village_id', $villageId)
+            ->set('form.password', 'password-rahasia')
+            ->set('form.password_confirmation', 'password-rahasia')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $user = User::query()->where('username', 'editor_konfirmasi')->first();
+        $this->assertNotNull($user);
+        $this->assertTrue(Hash::check('password-rahasia', $user->password));
+    }
+
     public function test_developer_can_switch_active_village_from_header(): void
     {
         $this->seed();
@@ -384,7 +457,7 @@ class ExampleTest extends TestCase
             ->assertStatus(200)
             ->assertSee('Pengaturan Desa')
             ->assertSee('CMS Backend')
-            ->assertSee('v1.4.0')
+            ->assertSee('v1.4.1')
             ->assertSee('Desa Beta');
 
         $this->actingAs($developer)->post('/admin/village-context', [
@@ -412,6 +485,7 @@ class ExampleTest extends TestCase
             ->assertSee('Frontend Publik')
             ->assertSee('cms-backend.json')
             ->assertSee('public-frontend.json')
+            ->assertSee('v1.4.1')
             ->assertSee('v1.4.0')
             ->assertSee('v1.0.0')
             ->assertDontSee('Tambah Versi')
@@ -537,6 +611,9 @@ class ExampleTest extends TestCase
             'business_categories',
             'businesses',
             'business_products',
+            'bumdes_categories',
+            'bumdes',
+            'bumdes_photos',
             'gallery_albums',
             'gallery_photos',
             'videos',
@@ -594,6 +671,10 @@ class ExampleTest extends TestCase
 
         $this->assertDatabaseHas('villages', ['slug' => 'desa-baru']);
         $this->assertDatabaseHas('villages', ['slug' => 'desa-baru-2']);
+        $this->assertDatabaseHas('users', ['username' => 'adminbaru']);
+        $this->assertDatabaseHas('users', ['username' => 'adminbarudua']);
+        $this->assertDatabaseHas('users', ['username' => 'editorbaru']);
+        $this->assertDatabaseHas('users', ['username' => 'editorbarudua']);
     }
 
     public function test_developer_can_impersonate_user_and_return_to_developer_account(): void
@@ -670,7 +751,7 @@ class ExampleTest extends TestCase
 
         $admin = User::query()->where('username', 'developer')->first();
 
-        foreach (['menus', 'businesses', 'projects', 'files'] as $module) {
+        foreach (['menus', 'businesses', 'bumdes', 'projects', 'files'] as $module) {
             $this->actingAs($admin)->get("/admin/module/{$module}")
                 ->assertStatus(200)
                 ->assertSee($module === 'menus' ? 'Tambah Menu' : 'Tambah Data');
@@ -703,12 +784,18 @@ class ExampleTest extends TestCase
         $this->actingAs($admin)->get('/admin/module/menus')
             ->assertStatus(200)
             ->assertSeeText('1 submenu')
-            ->assertSee('Layanan Administrasi');
+            ->assertSee('Layanan Administrasi')
+            ->assertSee('Tambah Submenu');
 
         $this->actingAs($admin)->get('/admin/module/businesses')
             ->assertOk()
             ->assertSee('Media Sosial')
             ->assertSee('Thumbnail', false);
+
+        $this->actingAs($admin)->get('/admin/module/bumdes')
+            ->assertOk()
+            ->assertSee('Pengelola')
+            ->assertSee('BUMDES Maju Bersama');
 
         $this->actingAs($admin)->get('/admin/module/projects')
             ->assertOk()
@@ -716,9 +803,47 @@ class ExampleTest extends TestCase
             ->assertSee('Thumbnail', false);
     }
 
+    public function test_admin_content_lists_can_be_searched(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $this->actingAs($admin);
+
+        Livewire::test('admin.page-index')
+            ->set('search', 'Layanan Administrasi')
+            ->assertSee('Layanan Administrasi Desa')
+            ->assertDontSee('Profil Desa Tanjung Lubuk');
+
+        Livewire::test('admin.module-manager', ['module' => 'files'])
+            ->set('search', 'Domisili')
+            ->assertSee('Contoh Format Surat Keterangan Domisili');
+
+        Livewire::test('admin.module-manager', ['module' => 'desa-cantik'])
+            ->set('search', 'Infografis')
+            ->assertSee('Infografis Data Penduduk')
+            ->assertDontSee('Publikasi Statistik');
+
+        Livewire::test('admin.module-manager', ['module' => 'businesses'])
+            ->set('search', 'Hasil Tani')
+            ->assertSee('Hasil Tani Segar')
+            ->assertDontSee('Produk Unggulan Desa');
+
+        Livewire::test('admin.module-manager', ['module' => 'bumdes'])
+            ->set('search', 'Unit Layanan')
+            ->assertSee('Unit Layanan Desa')
+            ->assertDontSee('BUMDES Maju Bersama');
+
+        Livewire::test('admin.module-manager', ['module' => 'projects'])
+            ->set('search', 'Drainase')
+            ->assertSee('Pembangunan Drainase Permukiman')
+            ->assertDontSee('Rehabilitasi Jalan Lingkungan');
+    }
+
     public function test_admin_can_save_business_and_project_coordinates(): void
     {
         $this->seed();
+        Storage::fake('public');
 
         $admin = User::query()->where('username', 'developer')->first();
         $this->actingAs($admin);
@@ -728,14 +853,53 @@ class ExampleTest extends TestCase
             ->set('form.name', 'Warung Koordinat')
             ->set('form.coordinates', '-3.295384, 104.674993')
             ->set('form.instagram_url', 'https://instagram.com/warungkoordinat')
+            ->set('businessPhotoUploads', [
+                UploadedFile::fake()->image('depan-warung.jpg', 900, 700),
+                UploadedFile::fake()->image('produk-warung.jpg', 900, 700),
+            ])
             ->call('save')
             ->assertHasNoErrors();
+
+        $businessId = (int) DB::table('businesses')->where('name', 'Warung Koordinat')->value('id');
 
         $this->assertDatabaseHas('businesses', [
             'name' => 'Warung Koordinat',
             'latitude' => -3.295384,
             'longitude' => 104.674993,
             'instagram_url' => 'https://instagram.com/warungkoordinat',
+        ]);
+        $this->assertDatabaseCount('business_photos', 2);
+        $this->assertDatabaseHas('business_photos', [
+            'business_id' => $businessId,
+            'sort_order' => 1,
+        ]);
+        $this->assertDatabaseHas('business_photos', [
+            'business_id' => $businessId,
+            'sort_order' => 2,
+        ]);
+
+        Livewire::test('admin.module-manager', ['module' => 'bumdes'])
+            ->call('create')
+            ->set('form.name', 'BUMDES Koordinat')
+            ->set('form.manager_name', 'Pengelola Koordinat')
+            ->set('form.coordinates', '-3.295300, 104.674900')
+            ->set('businessPhotoUploads', [
+                UploadedFile::fake()->image('kantor-bumdes.jpg', 900, 700),
+            ])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $bumdesId = (int) DB::table('bumdes')->where('name', 'BUMDES Koordinat')->value('id');
+
+        $this->assertDatabaseHas('bumdes', [
+            'name' => 'BUMDES Koordinat',
+            'manager_name' => 'Pengelola Koordinat',
+            'latitude' => -3.2953,
+            'longitude' => 104.6749,
+        ]);
+        $this->assertDatabaseHas('bumdes_photos', [
+            'bumdes_id' => $bumdesId,
+            'sort_order' => 1,
         ]);
 
         Livewire::test('admin.module-manager', ['module' => 'projects'])
@@ -766,6 +930,27 @@ class ExampleTest extends TestCase
             ->assertHasErrors(['form.coordinates']);
     }
 
+    public function test_admin_can_set_article_publication_date(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $this->actingAs($admin);
+
+        Livewire::test('admin.post-form')
+            ->set('form.title', 'Artikel Dengan Tanggal Publikasi')
+            ->set('form.excerpt', 'Ringkasan tanggal publikasi.')
+            ->set('form.published_at', '2026-06-30T08:15')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('posts', [
+            'title' => 'Artikel Dengan Tanggal Publikasi',
+            'published_at' => '2026-06-30 08:15:00',
+            'status' => 'published',
+        ]);
+    }
+
     public function test_admin_can_edit_dynamic_menu_without_creating_duplicate(): void
     {
         $this->seed();
@@ -779,10 +964,9 @@ class ExampleTest extends TestCase
         $this->assertNotNull($menu);
         $beforeCount = DB::table('navigation_items')->count();
 
-        Livewire::test('admin.module-manager', ['module' => 'menus'])
+        Livewire::test('admin.menu-manager')
             ->call('edit', $menu->id)
             ->set('form.label', 'Profil Pemerintah Desa')
-            ->set('form.sort_order', 9)
             ->call('save')
             ->assertHasNoErrors();
 
@@ -790,10 +974,114 @@ class ExampleTest extends TestCase
         $this->assertDatabaseHas('navigation_items', [
             'id' => $menu->id,
             'label' => 'Profil Pemerintah Desa',
-            'sort_order' => 9,
         ]);
         $this->assertDatabaseMissing('navigation_items', [
             'label' => 'Profil',
+        ]);
+    }
+
+    public function test_admin_can_sort_dynamic_menu_with_drag_and_drop_action(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $this->actingAs($admin);
+
+        $villageId = DB::table('villages')->value('id');
+        $menuId = DB::table('navigation_menus')->where('village_id', $villageId)->where('location', 'public')->value('id');
+        $menuIds = DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->where('menu_id', $menuId)
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $this->assertGreaterThan(2, count($menuIds));
+
+        $newOrder = array_reverse($menuIds);
+
+        Livewire::test('admin.menu-manager')
+            ->call('reorderMenus', null, $newOrder)
+            ->assertHasNoErrors();
+
+        $sortedLabels = DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->where('menu_id', $menuId)
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $this->assertSame($newOrder, $sortedLabels);
+    }
+
+    public function test_admin_can_move_submenu_to_another_parent_with_drag_and_drop_action(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $this->actingAs($admin);
+
+        $villageId = DB::table('villages')->value('id');
+        $menuId = DB::table('navigation_menus')->where('village_id', $villageId)->where('location', 'public')->value('id');
+        $submenu = DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->where('menu_id', $menuId)
+            ->where('label', 'Layanan Administrasi')
+            ->first();
+        $targetParentId = (int) DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->where('menu_id', $menuId)
+            ->whereNull('parent_id')
+            ->where('label', 'Berita')
+            ->value('id');
+
+        $this->assertNotNull($submenu);
+        $this->assertNotSame((int) $submenu->parent_id, $targetParentId);
+
+        Livewire::test('admin.menu-manager')
+            ->call('reorderMenus', $targetParentId, [(int) $submenu->id], (int) $submenu->id, (int) $submenu->parent_id)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('navigation_items', [
+            'id' => $submenu->id,
+            'parent_id' => $targetParentId,
+            'sort_order' => 1,
+        ]);
+    }
+
+    public function test_admin_can_create_submenu_from_parent_drop_zone(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $this->actingAs($admin);
+
+        $villageId = DB::table('villages')->value('id');
+        $parent = DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->whereNull('parent_id')
+            ->where('label', 'Berita')
+            ->first();
+
+        $this->assertNotNull($parent);
+
+        Livewire::test('admin.menu-manager')
+            ->call('createSubmenu', $parent->id)
+            ->assertSet('form.parent_id', $parent->id)
+            ->set('form.label', 'Arsip Berita')
+            ->set('form.url', '/artikel/arsip')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('navigation_items', [
+            'village_id' => $villageId,
+            'parent_id' => $parent->id,
+            'label' => 'Arsip Berita',
+            'url' => '/artikel/arsip',
         ]);
     }
 
@@ -817,7 +1105,7 @@ class ExampleTest extends TestCase
         $this->actingAs($editor)->get('/admin/module/files')->assertOk();
         $this->actingAs($editor)->get('/admin/references/content-categories')->assertOk();
 
-        foreach (['businesses', 'projects', 'officials', 'maps', 'budgets', 'demographics'] as $module) {
+        foreach (['businesses', 'bumdes', 'projects', 'officials', 'maps', 'budgets', 'demographics'] as $module) {
             $this->actingAs($editor)->get("/admin/module/{$module}")->assertOk();
         }
 
@@ -947,8 +1235,26 @@ class ExampleTest extends TestCase
 
         $villageId = (int) DB::table('villages')->value('id');
         $latestPostId = DB::table('posts')->where('village_id', $villageId)->orderByDesc('published_at')->value('id');
+        $businessId = (int) DB::table('businesses')->where('village_id', $villageId)->orderBy('name')->value('id');
         DB::table('posts')->where('id', $latestPostId)->update([
             'body' => '<p>Isi artikel</p><img src="/storage/editor-images/contoh.png">',
+        ]);
+        DB::table('business_photos')->insert([
+            'village_id' => $villageId,
+            'business_id' => $businessId,
+            'image_url' => '/storage/business-gallery/contoh.webp',
+            'sort_order' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $bumdesId = (int) DB::table('bumdes')->where('village_id', $villageId)->orderBy('name')->value('id');
+        DB::table('bumdes_photos')->insert([
+            'village_id' => $villageId,
+            'bumdes_id' => $bumdesId,
+            'image_url' => '/storage/bumdes-gallery/contoh.webp',
+            'sort_order' => 2,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
         $response = $this->getJson("/api/villages/{$villageId}/site");
 
@@ -956,10 +1262,13 @@ class ExampleTest extends TestCase
             ->assertJsonPath('data.village.id', $villageId)
             ->assertJsonPath('data.village.name', 'Desa Tanjung Lubuk')
             ->assertJsonPath('data.theme', 'modern-style-1')
-            ->assertJsonPath('data.application_version.frontend', '1.3.3')
+            ->assertJsonPath('data.application_version.frontend', '1.4.0')
             ->assertJsonCount(2, 'data.banners')
             ->assertJsonCount(6, 'data.posts')
             ->assertJsonCount(3, 'data.businesses')
+            ->assertJsonCount(1, 'data.businesses.0.photos')
+            ->assertJsonCount(2, 'data.bumdes')
+            ->assertJsonCount(2, 'data.bumdes.0.photos')
             ->assertJsonCount(2, 'data.projects')
             ->assertJsonCount(2, 'data.desa_cantik.categories')
             ->assertJsonCount(2, 'data.desa_cantik.items')
@@ -976,6 +1285,14 @@ class ExampleTest extends TestCase
         app(PublicVillageSite::class)->forget($villageId);
         $this->getJson("/api/villages/{$villageId}/site")
             ->assertJsonPath('data.village.name', 'Nama Belum Ter-cache');
+
+        DB::table('site_settings')->updateOrInsert(
+            ['village_id' => $villageId, 'key' => 'home_shortcuts_enabled'],
+            ['value' => '0', 'type' => 'boolean', 'created_at' => now(), 'updated_at' => now()],
+        );
+        app(PublicVillageSite::class)->forget($villageId);
+        $this->getJson("/api/villages/{$villageId}/site")
+            ->assertJsonCount(0, 'data.shortcuts');
     }
 
     public function test_public_article_list_supports_filters_and_detail_sidebar(): void
@@ -1010,7 +1327,7 @@ class ExampleTest extends TestCase
         $developer = User::query()->where('username', 'developer')->first();
         $villageId = (int) DB::table('villages')->value('id');
         $bannerId = (int) DB::table('hero_banners')->where('village_id', $villageId)->value('id');
-        $postId = (int) DB::table('posts')->where('village_id', $villageId)->value('id');
+        $postId = (int) DB::table('posts')->where('village_id', $villageId)->orderByDesc('published_at')->value('id');
 
         $this->getJson("/api/villages/{$villageId}/site")->assertJsonPath('data.banners.0.title', 'Desa Tanjung Lubuk');
         $this->actingAs($developer);
@@ -1023,6 +1340,7 @@ class ExampleTest extends TestCase
 
         Livewire::test('admin.post-form', ['id' => $postId])
             ->set('form.title', 'Berita Langsung Terbaru')
+            ->set('form.published_at', now()->format('Y-m-d\TH:i'))
             ->call('save')
             ->assertHasNoErrors();
 
@@ -1446,7 +1764,6 @@ class ExampleTest extends TestCase
             ->call('create', 'office_hours')
             ->set('form.title', 'Jam Kantor Desa')
             ->set('form.placement', 'home')
-            ->set('form.sort_order', 2)
             ->set('config.weekdays', '08.00 - 15.00 WIB')
             ->set('config.saturday', '08.00 - 12.00 WIB')
             ->call('save')
@@ -1462,6 +1779,54 @@ class ExampleTest extends TestCase
             'title' => 'Jam Kantor Desa',
             'placement' => 'footer',
         ]);
+    }
+
+    public function test_village_user_can_sort_widgets_with_drag_and_drop_action(): void
+    {
+        $this->seed();
+
+        $villageId = (int) DB::table('villages')->value('id');
+        $adminDesa = User::query()->create([
+            'village_id' => $villageId,
+            'name' => 'Admin Widget Sort',
+            'username' => 'admin_widget_sort',
+            'email' => 'admin.widget.sort@test.local',
+            'password' => 'password',
+            'role' => 'admin_desa',
+        ]);
+        $this->actingAs($adminDesa);
+
+        Livewire::test('admin.widget-manager')
+            ->set('activeTab', 'active')
+            ->assertSee('Beranda / Home')
+            ->assertSee('Di bawah Banner')
+            ->assertSee('Footer');
+
+        $widgetIds = DB::table('village_widgets')
+            ->where('village_id', $villageId)
+            ->where('placement', 'home')
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $this->assertGreaterThan(2, count($widgetIds));
+
+        $newOrder = array_reverse($widgetIds);
+
+        Livewire::test('admin.widget-manager')
+            ->call('reorderWidgets', 'home', $newOrder)
+            ->assertHasNoErrors();
+
+        $sortedIds = DB::table('village_widgets')
+            ->where('village_id', $villageId)
+            ->where('placement', 'home')
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $this->assertSame($newOrder, $sortedIds);
     }
 
     public function test_empty_widget_form_shows_validation_errors(): void

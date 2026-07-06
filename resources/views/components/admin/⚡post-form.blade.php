@@ -4,6 +4,7 @@ use App\Services\OptimizedImageStorage;
 use App\Support\CurrentVillage;
 use App\Support\PublicSiteCache;
 use App\Support\UniqueSlug;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
@@ -31,6 +32,7 @@ new class extends Component {
         'featured_image_url' => '',
         'source_type' => 'village',
         'status' => 'published',
+        'published_at' => '',
     ];
 
     public function mount(?int $id = null): void
@@ -44,7 +46,12 @@ new class extends Component {
             $post = DB::table('posts')->where('village_id', $this->villageId)->where('id', $id)->first();
             if ($post) {
                 $this->form = array_merge($this->form, (array) $post);
+                $this->form['published_at'] = $post->published_at
+                    ? Carbon::parse($post->published_at)->format('Y-m-d\TH:i')
+                    : now()->format('Y-m-d\TH:i');
             }
+        } else {
+            $this->form['published_at'] = now()->format('Y-m-d\TH:i');
         }
     }
 
@@ -58,6 +65,7 @@ new class extends Component {
                 'form.body' => ['nullable', 'string'],
                 'form.source_type' => ['required', 'string'],
                 'form.status' => ['required', 'string'],
+                'form.published_at' => ['nullable', 'date'],
                 'thumbnailUpload' => ['nullable', 'image', 'max:4096'],
             ],
             [],
@@ -68,6 +76,7 @@ new class extends Component {
                 'form.body' => 'Konten',
                 'form.source_type' => 'Sumber',
                 'form.status' => 'Status',
+                'form.published_at' => 'Tanggal Publikasi',
                 'thumbnailUpload' => 'Gambar Thumbnail',
             ],
         )['form'];
@@ -76,7 +85,11 @@ new class extends Component {
             $data['featured_image_url'] = app(OptimizedImageStorage::class)->replace($this->thumbnailUpload, 'post-thumbnails', $this->form['featured_image_url'] ?: null);
         }
 
-        $payload = [...$data, 'category_id' => $data['category_id'] ?: null, 'slug' => UniqueSlug::make('posts', $data['title'], $this->id), 'author_id' => auth()->id(), 'village_id' => $this->villageId, 'published_at' => $data['status'] === 'published' ? now() : null, 'updated_at' => now()];
+        $publishedAt = $data['status'] === 'published'
+            ? Carbon::parse($data['published_at'] ?: now())->format('Y-m-d H:i:s')
+            : null;
+
+        $payload = [...$data, 'category_id' => $data['category_id'] ?: null, 'slug' => UniqueSlug::make('posts', $data['title'], $this->id), 'author_id' => auth()->id(), 'village_id' => $this->villageId, 'published_at' => $publishedAt, 'updated_at' => now()];
 
         if ($this->id) {
             DB::table('posts')->where('village_id', $this->villageId)->where('id', $this->id)->update($payload);
@@ -113,6 +126,7 @@ new class extends Component {
             <x-admin.select label="Kategori" model="form.category_id" :options="collect($categories)->pluck('name', 'id')->prepend('Pilih kategori', '')->all()" />
             <x-admin.select label="Sumber" model="form.source_type" :options="collect($sources)->pluck('name', 'code')->all()" class="mt-4" />
             <x-admin.select label="Status" model="form.status" :options="['published' => 'Terbit', 'draft' => 'Draf']" class="mt-4" />
+            <x-admin.input label="Tanggal Publikasi" model="form.published_at" type="datetime-local" class="mt-4" />
             <div class="mt-4">
                 <label class="text-sm font-bold">Thumbnail Artikel</label>
                 <p class="mt-1 text-xs text-zinc-500">Otomatis diperkecil dan dikompresi ke WebP.</p>

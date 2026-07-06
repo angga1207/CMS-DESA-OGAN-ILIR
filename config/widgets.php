@@ -75,14 +75,14 @@ return [
         ],
     ],
     'complaint_link' => [
-        'label' => 'Tautan Pengaduan',
-        'description' => 'Akses cepat menuju formulir atau kanal pengaduan masyarakat.',
+        'label' => 'Widget Melayang',
+        'description' => 'Akses cepat menuju tautan penting yang tampil sebagai widget melayang atau footer.',
         'icon' => 'fa-solid fa-comment-dots',
         'default_placement' => 'floating_left',
         'placements' => ['floating_left', 'floating_right', 'footer'],
         'fields' => [
-            'button_label' => ['label' => 'Label Tombol', 'type' => 'text', 'rule' => 'required|string|max:80', 'default' => 'Sampaikan Pengaduan'],
-            'url' => ['label' => 'URL Pengaduan', 'type' => 'url', 'rule' => 'required|url|max:2048'],
+            'button_label' => ['label' => 'Label Tombol', 'type' => 'text', 'rule' => 'required|string|max:80', 'default' => 'Buka Tautan'],
+            'url' => ['label' => 'URL Tujuan', 'type' => 'url', 'rule' => 'required|url|max:2048'],
             'open_new_tab' => ['label' => 'Buka di Tab Baru', 'type' => 'checkbox', 'rule' => 'boolean', 'default' => true],
         ],
     ],

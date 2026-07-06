@@ -33,6 +33,7 @@ new class extends Component
             ['label' => 'Artikel', 'helper' => 'konten tersimpan', 'value' => DB::table('posts')->where('village_id', $this->villageId)->count(), 'href' => route('admin.posts.index'), 'icon' => 'fa-newspaper', 'feature' => 'articles', 'tone' => 'emerald'],
             ['label' => 'Halaman', 'helper' => 'halaman informasi', 'value' => DB::table('pages')->where('village_id', $this->villageId)->count(), 'href' => route('admin.pages.index'), 'icon' => 'fa-file-lines', 'feature' => 'pages', 'tone' => 'sky'],
             ['label' => 'UMKM', 'helper' => 'usaha terdata', 'value' => DB::table('businesses')->where('village_id', $this->villageId)->count(), 'href' => route('admin.module', 'businesses'), 'icon' => 'fa-store', 'feature' => 'businesses', 'tone' => 'amber'],
+            ['label' => 'BUMDES', 'helper' => 'unit usaha desa', 'value' => DB::table('bumdes')->where('village_id', $this->villageId)->count(), 'href' => route('admin.module', 'bumdes'), 'icon' => 'fa-building-user', 'feature' => 'bumdes', 'tone' => 'teal'],
             ['label' => 'Pembangunan', 'helper' => 'kegiatan desa', 'value' => DB::table('development_projects')->where('village_id', $this->villageId)->count(), 'href' => route('admin.module', 'projects'), 'icon' => 'fa-person-digging', 'feature' => 'projects', 'tone' => 'violet'],
         ];
 
@@ -103,6 +104,7 @@ new class extends Component
         'emerald' => 'bg-emerald-50 text-emerald-700 ring-emerald-100',
         'sky' => 'bg-sky-50 text-sky-700 ring-sky-100',
         'amber' => 'bg-amber-50 text-amber-700 ring-amber-100',
+        'teal' => 'bg-teal-50 text-teal-700 ring-teal-100',
         'violet' => 'bg-violet-50 text-violet-700 ring-violet-100',
     ];
     $trend = $visitorSummary['trend'] ?? 0;

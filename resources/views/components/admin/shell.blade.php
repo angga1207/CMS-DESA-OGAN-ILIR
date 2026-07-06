@@ -30,10 +30,8 @@
                 ['label' => 'Halaman', 'href' => route('admin.pages.index'), 'icon' => 'fa-file-lines', 'active' => request()->routeIs('admin.pages.*'), 'feature' => 'pages'],
                 ['label' => 'Banner', 'href' => route('admin.banners.index'), 'icon' => 'fa-panorama', 'active' => request()->routeIs('admin.banners.*'), 'feature' => 'banners'],
                 ['label' => 'Galeri', 'href' => route('admin.gallery.index'), 'icon' => 'fa-images', 'active' => request()->routeIs('admin.gallery.*'), 'feature' => 'gallery'],
-                ['label' => 'Menu Dinamis', 'href' => route('admin.module', 'menus'), 'icon' => 'fa-bars-staggered', 'active' => $moduleActive('menus'), 'feature' => 'menus'],
                 ['label' => 'Unduhan', 'href' => route('admin.module', 'files'), 'icon' => 'fa-download', 'active' => $moduleActive('files'), 'feature' => 'downloads'],
                 ['label' => 'Desa Cantik', 'href' => route('admin.module', 'desa-cantik'), 'icon' => 'fa-chart-simple', 'active' => $moduleActive('desa-cantik'), 'feature' => 'desa_cantik'],
-                ['label' => 'Widget Website', 'href' => route('admin.widgets.index'), 'icon' => 'fa-puzzle-piece', 'active' => request()->routeIs('admin.widgets.*'), 'feature' => 'widgets'],
             ],
         ],
         'Data Desa' => [
@@ -41,6 +39,7 @@
             'links' => [
                 ['label' => 'Perangkat Desa', 'href' => route('admin.module', 'officials'), 'icon' => 'fa-id-badge', 'active' => $moduleActive('officials'), 'feature' => 'officials'],
                 ['label' => 'UMKM', 'href' => route('admin.module', 'businesses'), 'icon' => 'fa-store', 'active' => $moduleActive('businesses'), 'feature' => 'businesses'],
+                ['label' => 'BUMDES', 'href' => route('admin.module', 'bumdes'), 'icon' => 'fa-building-user', 'active' => $moduleActive('bumdes'), 'feature' => 'bumdes'],
                 ['label' => 'Pembangunan', 'href' => route('admin.module', 'projects'), 'icon' => 'fa-person-digging', 'active' => $moduleActive('projects'), 'feature' => 'projects'],
                 ['label' => 'Peta Sebaran', 'href' => route('admin.module', 'maps'), 'icon' => 'fa-map-location-dot', 'active' => $moduleActive('maps'), 'feature' => 'maps'],
                 ['label' => 'Anggaran', 'href' => route('admin.module', 'budgets'), 'icon' => 'fa-chart-pie', 'active' => $moduleActive('budgets'), 'feature' => 'budgets'],
@@ -59,6 +58,8 @@
             'links' => [
                 ['label' => 'Pengaturan Desa', 'href' => route('admin.settings.index'), 'icon' => 'fa-gear', 'active' => request()->routeIs('admin.settings.*')],
                 ['label' => 'Styling Website', 'href' => route('admin.styling.index'), 'icon' => 'fa-palette', 'active' => request()->routeIs('admin.styling.*')],
+                ['label' => 'Menu Dinamis', 'href' => route('admin.module', 'menus'), 'icon' => 'fa-bars-staggered', 'active' => $moduleActive('menus'), 'feature' => 'menus'],
+                ['label' => 'Widget Website', 'href' => route('admin.widgets.index'), 'icon' => 'fa-puzzle-piece', 'active' => request()->routeIs('admin.widgets.*'), 'feature' => 'widgets'],
                 ['label' => 'Pengguna', 'href' => route('admin.users.index'), 'icon' => 'fa-users-gear', 'active' => request()->routeIs('admin.users.*')],
                 ['label' => 'Versi Aplikasi', 'href' => route('admin.application-versions.index'), 'icon' => 'fa-code-branch', 'active' => request()->routeIs('admin.application-versions.*')],
             ],
@@ -67,10 +68,6 @@
 
     if (! $canManageSystem) {
         unset($groups['Sistem']);
-        $groups['Kelola Konten']['links'] = collect($groups['Kelola Konten']['links'])
-            ->reject(fn (array $link): bool => in_array($link['label'], ['Widget Website'], true))
-            ->values()
-            ->all();
     }
 
     $impersonateManager = app(\Lab404\Impersonate\Services\ImpersonateManager::class);

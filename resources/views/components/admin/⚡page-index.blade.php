@@ -17,9 +17,24 @@ new class extends Component
 
     public int $totalPages = 0;
 
+    public string $search = '';
+
     public function mount(): void
     {
         $this->villageId = CurrentVillage::id();
+        $this->loadPages();
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->page = 1;
+        $this->loadPages();
+    }
+
+    public function resetSearch(): void
+    {
+        $this->search = '';
+        $this->page = 1;
         $this->loadPages();
     }
 
@@ -44,10 +59,22 @@ new class extends Component
 
     private function loadPages(): void
     {
-        $this->totalPages = DB::table('pages')->where('village_id', $this->villageId)->count();
-        $this->page = min($this->page, max((int) ceil($this->totalPages / $this->perPage), 1));
-        $this->pages = DB::table('pages')
+        $query = DB::table('pages')
             ->where('village_id', $this->villageId)
+            ->when(trim($this->search) !== '', function ($query): void {
+                $search = '%'.strtolower(trim($this->search)).'%';
+                $query->where(function ($query) use ($search): void {
+                    $query
+                        ->whereRaw('LOWER(title) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(slug) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(COALESCE(excerpt, \'\')) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(status) LIKE ?', [$search]);
+                });
+            });
+
+        $this->totalPages = (clone $query)->count();
+        $this->page = min($this->page, max((int) ceil($this->totalPages / $this->perPage), 1));
+        $this->pages = $query
             ->orderByDesc('updated_at')
             ->forPage($this->page, $this->perPage)
             ->get()
@@ -64,6 +91,13 @@ new class extends Component
             <p class="text-sm text-zinc-500">Tambah/edit halaman dilakukan di halaman.</p>
         </div>
         <a href="{{ route('admin.pages.create') }}" class="inline-flex min-h-11 items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Tambah Halaman</a>
+    </div>
+    <div class="grid gap-3 border-b border-zinc-200 p-5 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <x-admin.input label="Cari Halaman" model="search" placeholder="Judul, slug, ringkasan, atau status" />
+        <button type="button" wire:click="resetSearch" class="inline-flex min-h-11 items-center justify-center gap-2 self-end rounded-md border border-zinc-300 px-3 text-sm font-bold text-zinc-700">
+            <i class="fa-solid fa-rotate-left"></i>
+            Reset
+        </button>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">

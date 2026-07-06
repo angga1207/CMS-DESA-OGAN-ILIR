@@ -53,6 +53,7 @@ new class extends Component
         'theme_surface' => '#f7f7f2',
         'theme_text' => '#17221f',
         'font_style' => 'classic',
+        'home_shortcuts_enabled' => '1',
     ];
 
     public array $shortcutLinks = [
@@ -111,15 +112,23 @@ new class extends Component
             'settings.theme_surface' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'settings.theme_text' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'settings.font_style' => ['required', 'in:classic,modern,friendly,elegant,literary,system'],
+            'settings.home_shortcuts_enabled' => ['boolean'],
             'shortcutLinks' => ['array', 'max:4'],
             'shortcutLinks.*.label' => ['nullable', 'string', 'max:80'],
             'shortcutLinks.*.url' => ['nullable', 'string', 'max:2048', 'regex:/^(\/|#)/'],
         ]);
 
         foreach ($this->settings as $key => $value) {
+            $isBoolean = $key === 'home_shortcuts_enabled';
+
             DB::table('site_settings')->updateOrInsert(
                 ['village_id' => $this->villageId, 'key' => $key],
-                ['value' => $value, 'type' => 'text', 'updated_at' => now(), 'created_at' => now()],
+                [
+                    'value' => $isBoolean ? ((bool) $value ? '1' : '0') : $value,
+                    'type' => $isBoolean ? 'boolean' : 'text',
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ],
             );
         }
 
@@ -181,8 +190,19 @@ new class extends Component
     </section>
 
     <section class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-        <h2 class="font-black">Label & Link di Bawah Banner</h2>
-        <p class="mt-1 text-sm text-zinc-500">Maksimal empat item per desa. Gunakan link internal seperti <code>/tentang</code> atau <code>#profil</code>.</p>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 class="font-black">Label & Link di Bawah Banner</h2>
+                <p class="mt-1 text-sm text-zinc-500">Maksimal empat item per desa. Gunakan link internal seperti <code>/tentang</code> atau <code>#profil</code>.</p>
+            </div>
+            <label class="inline-flex items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-bold text-zinc-700">
+                <input type="checkbox" wire:model="settings.home_shortcuts_enabled" class="mt-1 rounded border-zinc-300 text-emerald-600">
+                <span>
+                    Tampilkan Home Shortcut
+                    <small class="mt-1 block font-medium leading-5 text-zinc-500">Matikan jika shortcut tidak ingin tampil di frontend.</small>
+                </span>
+            </label>
+        </div>
         <div class="mt-4 grid gap-3">
             @foreach($shortcutLinks as $index => $shortcut)
                 <div class="grid gap-3 rounded-lg border border-zinc-200 p-4 sm:grid-cols-[1fr_1.25fr]" wire:key="shortcut-{{ $index }}">

@@ -59,6 +59,7 @@ final class PublicVillageSite
         $villageId = (int) $village->id;
         $settings = DB::table('site_settings')->where('village_id', $villageId)->pluck('value', 'key')->all();
         $shortcuts = json_decode((string) ($settings['home_shortcuts'] ?? '[]'), true);
+        $shortcutsEnabled = ! in_array(strtolower((string) ($settings['home_shortcuts_enabled'] ?? '1')), ['0', 'false', 'off', 'no'], true);
 
         return [
             'village' => [
@@ -94,7 +95,7 @@ final class PublicVillageSite
                 'text' => $settings['theme_text'] ?? '#17221f',
                 'font_style' => $settings['font_style'] ?? 'classic',
             ],
-            'shortcuts' => is_array($shortcuts) ? array_slice(array_values($shortcuts), 0, 4) : [],
+            'shortcuts' => $shortcutsEnabled && is_array($shortcuts) ? array_slice(array_values($shortcuts), 0, 4) : [],
             'features' => VillageFeatures::enabledKeys($villageId),
             'navigation' => $this->navigation($villageId),
             'banners' => $this->rows('hero_banners', $villageId, fn ($query) => $query->where('is_active', true)->orderBy('sort_order')),
@@ -113,7 +114,8 @@ final class PublicVillageSite
                 $this->rows('pages', $villageId, fn ($query) => $query->where('status', 'published')->orderBy('title')),
             ),
             'galleries' => $this->galleries($villageId),
-            'businesses' => $this->rows('businesses', $villageId, fn ($query) => $query->where('is_active', true)->orderBy('name')),
+            'businesses' => $this->businesses($villageId),
+            'bumdes' => $this->bumdes($villageId),
             'projects' => $this->rows('development_projects', $villageId, fn ($query) => $query->orderByDesc('year')->orderByDesc('updated_at')),
             'downloads' => $this->rows('downloadable_files', $villageId, fn ($query) => $query->where('is_published', true)->orderByDesc('published_at')),
             'desa_cantik' => $this->desaCantik($villageId),
@@ -213,6 +215,60 @@ final class PublicVillageSite
         ];
     }
 
+    private function businesses(int $villageId): array
+    {
+        $photos = DB::table('business_photos')
+            ->where('village_id', $villageId)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('business_id');
+
+        return DB::table('businesses')
+            ->where('village_id', $villageId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(function (object $business) use ($photos): array {
+                $row = (array) $business;
+                $row['photos'] = $photos
+                    ->get($business->id, collect())
+                    ->map(fn (object $photo): array => (array) $photo)
+                    ->values()
+                    ->all();
+
+                return $row;
+            })
+            ->all();
+    }
+
+    private function bumdes(int $villageId): array
+    {
+        $photos = DB::table('bumdes_photos')
+            ->where('village_id', $villageId)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('bumdes_id');
+
+        return DB::table('bumdes')
+            ->where('village_id', $villageId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(function (object $bumdes) use ($photos): array {
+                $row = (array) $bumdes;
+                $row['photos'] = $photos
+                    ->get($bumdes->id, collect())
+                    ->map(fn (object $photo): array => (array) $photo)
+                    ->values()
+                    ->all();
+
+                return $row;
+            })
+            ->all();
+    }
+
     private function rows(string $table, int $villageId, callable $scope): array
     {
         return $scope(DB::table($table)->where('village_id', $villageId))->get()->map(fn (object $row): array => (array) $row)->all();
@@ -229,7 +285,7 @@ final class PublicVillageSite
 
     private function cacheKey(int $villageId, int $revision, string $frontendVersion): string
     {
-        return "public-site:v5:village:{$villageId}:revision:{$revision}:frontend:{$frontendVersion}";
+        return "public-site:v7:village:{$villageId}:revision:{$revision}:frontend:{$frontendVersion}";
     }
 
     private function revisionKey(int $villageId): string

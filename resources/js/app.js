@@ -297,6 +297,207 @@ const initSweetAlertConfirmations = () => {
     });
 };
 
+const menuSortableItems = (container) => Array.from(container.querySelectorAll(':scope > [data-menu-item-id]'));
+
+const menuDragAfterElement = (container, y) => {
+    const items = menuSortableItems(container).filter((item) => item.dataset.dragging !== 'true');
+
+    return items.reduce((closest, item) => {
+        const box = item.getBoundingClientRect();
+        const offset = y - box.top - (box.height / 2);
+
+        if (offset < 0 && offset > closest.offset) {
+            return { offset, element: item };
+        }
+
+        return closest;
+    }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+};
+
+const syncMenuOrder = (container, movedItem = null) => {
+    const componentId = container.closest('[wire\\:id]')?.getAttribute('wire:id');
+    const component = componentId && window.Livewire ? window.Livewire.find(componentId) : null;
+    const orderedIds = menuSortableItems(container).map((item) => Number(item.dataset.menuItemId)).filter(Boolean);
+    const parentId = container.dataset.parentId ? Number(container.dataset.parentId) : null;
+    const movedId = movedItem?.dataset.menuItemId ? Number(movedItem.dataset.menuItemId) : null;
+    const sourceParentId = movedItem?.dataset.dragSourceParentId ? Number(movedItem.dataset.dragSourceParentId) : null;
+
+    if (!component || orderedIds.length < 1) {
+        return;
+    }
+
+    component.call('reorderMenus', parentId, orderedIds, movedId, sourceParentId);
+};
+
+const canDropMenuItem = (container, item) => {
+    if (!item) {
+        return false;
+    }
+
+    const targetLevel = container.dataset.menuLevel || 'main';
+    const itemLevel = item.dataset.menuLevel || 'main';
+
+    return targetLevel === itemLevel;
+};
+
+const initMenuSortables = () => {
+    document.querySelectorAll('[data-menu-sortable]').forEach((container) => {
+        if (container.dataset.sortableReady === '1') {
+            return;
+        }
+
+        container.dataset.sortableReady = '1';
+
+        container.addEventListener('dragstart', (event) => {
+            const item = event.target.closest('[data-menu-item-id]');
+
+            if (!item || item.parentElement !== container) {
+                return;
+            }
+
+            item.dataset.dragging = 'true';
+            item.dataset.dragSourceParentId = item.dataset.menuParentId || '';
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', item.dataset.menuItemId);
+        });
+
+        container.addEventListener('dragend', (event) => {
+            const item = event.target.closest('[data-menu-item-id]');
+
+            if (item) {
+                delete item.dataset.dragging;
+                delete item.dataset.dragSourceParentId;
+            }
+        });
+
+        container.addEventListener('dragover', (event) => {
+            const draggingItem = document.querySelector('[data-dragging="true"]');
+
+            if (!canDropMenuItem(container, draggingItem)) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const afterElement = menuDragAfterElement(container, event.clientY);
+
+            if (!afterElement) {
+                container.appendChild(draggingItem);
+            } else if (afterElement !== draggingItem) {
+                container.insertBefore(draggingItem, afterElement);
+            }
+        });
+
+        container.addEventListener('drop', (event) => {
+            const draggingItem = document.querySelector('[data-dragging="true"]');
+
+            if (!canDropMenuItem(container, draggingItem)) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            delete draggingItem.dataset.dragging;
+            draggingItem.dataset.menuParentId = container.dataset.parentId || '';
+            syncMenuOrder(container, draggingItem);
+            delete draggingItem.dataset.dragSourceParentId;
+        });
+    });
+};
+
+const widgetSortableItems = (container) => Array.from(container.querySelectorAll(':scope > [data-widget-item-id]'));
+
+const widgetDragAfterElement = (container, y) => {
+    const items = widgetSortableItems(container).filter((item) => item.dataset.dragging !== 'true');
+
+    return items.reduce((closest, item) => {
+        const box = item.getBoundingClientRect();
+        const offset = y - box.top - (box.height / 2);
+
+        if (offset < 0 && offset > closest.offset) {
+            return { offset, element: item };
+        }
+
+        return closest;
+    }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+};
+
+const syncWidgetOrder = (container) => {
+    const componentId = container.closest('[wire\\:id]')?.getAttribute('wire:id');
+    const component = componentId && window.Livewire ? window.Livewire.find(componentId) : null;
+    const orderedIds = widgetSortableItems(container).map((item) => Number(item.dataset.widgetItemId)).filter(Boolean);
+    const placement = container.dataset.widgetPlacement || '';
+
+    if (!component || !placement || orderedIds.length < 1) {
+        return;
+    }
+
+    component.call('reorderWidgets', placement, orderedIds);
+};
+
+const initWidgetSortables = () => {
+    document.querySelectorAll('[data-widget-sortable]').forEach((container) => {
+        if (container.dataset.sortableReady === '1') {
+            return;
+        }
+
+        container.dataset.sortableReady = '1';
+
+        container.addEventListener('dragstart', (event) => {
+            const item = event.target.closest('[data-widget-item-id]');
+
+            if (!item || item.parentElement !== container) {
+                return;
+            }
+
+            item.dataset.dragging = 'true';
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', item.dataset.widgetItemId);
+        });
+
+        container.addEventListener('dragend', (event) => {
+            const item = event.target.closest('[data-widget-item-id]');
+
+            if (item) {
+                delete item.dataset.dragging;
+            }
+        });
+
+        container.addEventListener('dragover', (event) => {
+            const draggingItem = container.querySelector(':scope > [data-dragging="true"]');
+
+            if (!draggingItem) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const afterElement = widgetDragAfterElement(container, event.clientY);
+
+            if (!afterElement) {
+                container.appendChild(draggingItem);
+            } else if (afterElement !== draggingItem) {
+                container.insertBefore(draggingItem, afterElement);
+            }
+        });
+
+        container.addEventListener('drop', (event) => {
+            const draggingItem = container.querySelector(':scope > [data-dragging="true"]');
+
+            if (!draggingItem) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            delete draggingItem.dataset.dragging;
+            syncWidgetOrder(container);
+        });
+    });
+};
+
 document.addEventListener('submit', (event) => {
     const form = event.target.closest('form[data-swal-confirm]');
 
@@ -452,6 +653,8 @@ const boot = () => {
     initTomSelect();
     observeTomSelectElements();
     initSweetAlertConfirmations();
+    initMenuSortables();
+    initWidgetSortables();
 };
 
 document.addEventListener('DOMContentLoaded', boot);
@@ -473,5 +676,7 @@ document.addEventListener('livewire:init', () => {
         });
 
         queueMicrotask(initTomSelect);
+        queueMicrotask(initMenuSortables);
+        queueMicrotask(initWidgetSortables);
     });
 });

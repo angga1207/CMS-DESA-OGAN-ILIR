@@ -198,6 +198,24 @@ new class extends Component
             }
         }
 
+        if ($this->canAccess(['roles' => ['developer', 'admin_desa', 'editor'], 'feature' => 'bumdes'])) {
+            $rows = DB::table('bumdes')
+                ->where('village_id', $villageId)
+                ->where(function ($query) use ($search): void {
+                    $query
+                        ->whereRaw('LOWER(name) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(COALESCE(manager_name, \'\')) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(COALESCE(description, \'\')) LIKE ?', [$search]);
+                })
+                ->latest('updated_at')
+                ->limit(3)
+                ->get(['name', 'manager_name', 'description']);
+
+            foreach ($rows as $row) {
+                $results[] = $this->result('BUMDES', $row->name, $row->manager_name ?: $row->description, route('admin.module', 'bumdes'), 'fa-building-user');
+            }
+        }
+
         if ($this->canAccess(['roles' => ['developer', 'admin_desa', 'editor'], 'feature' => 'projects'])) {
             $rows = DB::table('development_projects')
                 ->where('village_id', $villageId)
@@ -306,6 +324,7 @@ new class extends Component
             ['title' => 'Widget Website', 'subtitle' => 'Komponen tambahan website publik', 'href' => route('admin.widgets.index'), 'icon' => 'fa-puzzle-piece', 'feature' => 'widgets', 'roles' => ['developer', 'admin_desa']],
             ['title' => 'Perangkat Desa', 'subtitle' => 'Absensi perangkat desa dari SIDESI', 'href' => route('admin.module', 'officials'), 'icon' => 'fa-id-badge', 'feature' => 'officials', 'roles' => ['developer', 'admin_desa', 'editor']],
             ['title' => 'UMKM', 'subtitle' => 'Usaha dan produk unggulan desa', 'href' => route('admin.module', 'businesses'), 'icon' => 'fa-store', 'feature' => 'businesses', 'roles' => ['developer', 'admin_desa', 'editor']],
+            ['title' => 'BUMDES', 'subtitle' => 'Badan usaha milik desa', 'href' => route('admin.module', 'bumdes'), 'icon' => 'fa-building-user', 'feature' => 'bumdes', 'roles' => ['developer', 'admin_desa', 'editor']],
             ['title' => 'Pembangunan', 'subtitle' => 'Progres pembangunan desa', 'href' => route('admin.module', 'projects'), 'icon' => 'fa-person-digging', 'feature' => 'projects', 'roles' => ['developer', 'admin_desa', 'editor']],
             ['title' => 'Peta Sebaran', 'subtitle' => 'Sebaran fasilitas dan bantuan', 'href' => route('admin.module', 'maps'), 'icon' => 'fa-map-location-dot', 'feature' => 'maps', 'roles' => ['developer', 'admin_desa', 'editor']],
             ['title' => 'Anggaran', 'subtitle' => 'Transparansi APBDes dari SIDESI', 'href' => route('admin.module', 'budgets'), 'icon' => 'fa-chart-pie', 'feature' => 'budgets', 'roles' => ['developer', 'admin_desa', 'editor']],
@@ -367,6 +386,7 @@ new class extends Component
             '/unduhan' => 'downloads',
             '/desa-cantik' => 'desa_cantik',
             '/umkm' => 'businesses',
+            '/bumdes' => 'bumdes',
             '/pembangunan' => 'projects',
             '/peta-sebaran' => 'maps',
             '/anggaran' => 'budgets',

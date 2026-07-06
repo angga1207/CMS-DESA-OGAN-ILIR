@@ -26,6 +26,10 @@ new class extends Component {
 
     public $businessImageUpload = null;
 
+    public array $businessPhotoUploads = [];
+
+    public array $businessPhotos = [];
+
     public $projectImageUpload = null;
 
     public $documentUpload = null;
@@ -38,11 +42,9 @@ new class extends Component {
 
     public array $columns = [];
 
-    public array $pages = [];
-
-    public array $parentMenuOptions = [];
-
     public array $businessCategories = [];
+
+    public array $bumdesCategories = [];
 
     public array $desaCantikCategories = [];
 
@@ -54,14 +56,17 @@ new class extends Component {
 
     public int $totalRows = 0;
 
+    public string $search = '';
+
     public function mount(string $module): void
     {
-        abort_unless(in_array($module, ['menus', 'businesses', 'projects', 'files', 'desa-cantik'], true), 404);
+        abort_unless(in_array($module, ['businesses', 'bumdes', 'projects', 'files', 'desa-cantik'], true), 404);
         $role = auth()->user()?->role;
         abort_unless(in_array($role, ['developer', 'admin_desa', 'editor'], true), 403);
 
         $this->module = $module;
         $this->villageId = CurrentVillage::id();
+        $this->ensureBumdesCategories();
         $this->ensureDesaCantikCategories();
         $this->resetForm();
         $this->loadData();
@@ -84,13 +89,18 @@ new class extends Component {
 
         $data = (array) $row;
 
-        if (in_array($this->module, ['businesses', 'projects'], true)) {
+        if (in_array($this->module, ['businesses', 'bumdes', 'projects'], true)) {
             $data['coordinates'] = CoordinatePair::format($data['latitude'] ?? null, $data['longitude'] ?? null);
         }
 
         unset($data['latitude'], $data['longitude']);
 
         $this->form = array_merge($this->form, $data);
+
+        if (in_array($this->module, ['businesses', 'bumdes'], true)) {
+            $this->loadBusinessPhotos((int) $row->id);
+        }
+
         $this->showModal = true;
     }
 
@@ -100,11 +110,24 @@ new class extends Component {
         $this->resetForm();
     }
 
+    public function updatedSearch(): void
+    {
+        $this->page = 1;
+        $this->loadData();
+    }
+
+    public function resetSearch(): void
+    {
+        $this->search = '';
+        $this->page = 1;
+        $this->loadData();
+    }
+
     public function save(): void
     {
         match ($this->module) {
-            'menus' => $this->saveMenu(),
             'businesses' => $this->saveBusiness(),
+            'bumdes' => $this->saveBumdes(),
             'projects' => $this->saveProject(),
             'files' => $this->saveFile(),
             'desa-cantik' => $this->saveDesaCantik(),
@@ -122,8 +145,9 @@ new class extends Component {
     {
         $row = DB::table($this->table())->where('village_id', $this->villageId)->where('id', $id)->first();
 
-        if ($row && $this->module === 'businesses') {
+        if ($row && in_array($this->module, ['businesses', 'bumdes'], true)) {
             app(OptimizedImageStorage::class)->delete($row->featured_image_url);
+            $this->deleteBusinessPhotos($id);
         } elseif ($row && $this->module === 'projects') {
             app(OptimizedImageStorage::class)->delete($row->image_url);
         } elseif ($row && $this->module === 'files') {
@@ -136,6 +160,28 @@ new class extends Component {
         DB::table($this->table())->where('village_id', $this->villageId)->where('id', $id)->delete();
         PublicSiteCache::forget($this->villageId);
         $this->loadData();
+    }
+
+    public function removeBusinessPhoto(int $id): void
+    {
+        $photo = DB::table($this->photoTable())
+            ->where('village_id', $this->villageId)
+            ->where('id', $id)
+            ->when($this->form['id'] ?? null, fn ($query, $businessId) => $query->where($this->photoForeignKey(), $businessId))
+            ->first();
+
+        if (! $photo) {
+            return;
+        }
+
+        app(OptimizedImageStorage::class)->delete($photo->image_url);
+        DB::table($this->photoTable())->where('id', $photo->id)->delete();
+
+        if ($this->form['id']) {
+            $this->loadBusinessPhotos((int) $this->form['id']);
+        }
+
+        PublicSiteCache::forget($this->villageId);
     }
 
     public function previousPage(): void
@@ -152,40 +198,31 @@ new class extends Component {
 
     private function loadData(): void
     {
-        $this->pages = DB::table('pages')->where('village_id', $this->villageId)->orderBy('title')->get()->map(fn($row): array => (array) $row)->all();
         $this->businessCategories = DB::table('business_categories')->where('village_id', $this->villageId)->orderBy('name')->get()->map(fn($row): array => (array) $row)->all();
+        $this->bumdesCategories = DB::table('bumdes_categories')->where('village_id', $this->villageId)->orderBy('name')->get()->map(fn($row): array => (array) $row)->all();
         $this->desaCantikCategories = DB::table('desa_cantik_categories')->where('village_id', $this->villageId)->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get()->map(fn($row): array => (array) $row)->all();
-
-        if ($this->module === 'menus') {
-            $menuId = $this->publicMenuId();
-            $this->title = 'Menu Dinamis';
-            $this->columns = ['label' => 'Label', 'type' => 'Tipe', 'parent_label' => 'Parent', 'page_title' => 'Page', 'url' => 'URL'];
-            $this->rows = DB::table('navigation_items')
-                ->leftJoin('navigation_items as parents', 'navigation_items.parent_id', '=', 'parents.id')
-                ->leftJoin('pages', 'navigation_items.page_id', '=', 'pages.id')
-                ->where('navigation_items.menu_id', $menuId)
-                ->where('navigation_items.village_id', $this->villageId)
-                ->orderBy('navigation_items.parent_id')
-                ->orderBy('navigation_items.sort_order')
-                ->get(['navigation_items.*', 'parents.label as parent_label', 'pages.title as page_title'])
-                ->map(fn($row): array => (array) $row)
-                ->all();
-            $this->parentMenuOptions = collect($this->rows)->whereNull('parent_id')->values()->all();
-
-            return;
-        }
 
         if ($this->module === 'businesses') {
             $this->title = 'UMKM';
             $this->columns = ['thumbnail' => 'Foto', 'name' => 'Usaha', 'category_name' => 'Kategori', 'owner_name' => 'Pemilik', 'coordinates' => 'Lokasi', 'social_media' => 'Media Sosial'];
             $query = DB::table('businesses')->leftJoin('business_categories', 'businesses.category_id', '=', 'business_categories.id')->where('businesses.village_id', $this->villageId);
+            $this->applySearch($query, ['businesses.name', 'businesses.slug', 'businesses.owner_name', 'businesses.whatsapp', 'businesses.hamlet', 'businesses.address', 'businesses.description', 'business_categories.name']);
             $this->totalRows = (clone $query)->count('businesses.id');
             $this->page = min($this->page, max((int) ceil($this->totalRows / $this->perPage), 1));
             $this->rows = $query->select('businesses.*', 'business_categories.name as category_name')->orderByDesc('businesses.updated_at')->forPage($this->page, $this->perPage)->get()->map(fn($row): array => (array) $row)->all();
+        } elseif ($this->module === 'bumdes') {
+            $this->title = 'BUMDES';
+            $this->columns = ['thumbnail' => 'Foto', 'name' => 'BUMDES', 'category_name' => 'Kategori', 'manager_name' => 'Pengelola', 'coordinates' => 'Lokasi', 'social_media' => 'Media Sosial'];
+            $query = DB::table('bumdes')->leftJoin('bumdes_categories', 'bumdes.category_id', '=', 'bumdes_categories.id')->where('bumdes.village_id', $this->villageId);
+            $this->applySearch($query, ['bumdes.name', 'bumdes.slug', 'bumdes.manager_name', 'bumdes.whatsapp', 'bumdes.address', 'bumdes.description', 'bumdes_categories.name']);
+            $this->totalRows = (clone $query)->count('bumdes.id');
+            $this->page = min($this->page, max((int) ceil($this->totalRows / $this->perPage), 1));
+            $this->rows = $query->select('bumdes.*', 'bumdes_categories.name as category_name')->orderByDesc('bumdes.updated_at')->forPage($this->page, $this->perPage)->get()->map(fn($row): array => (array) $row)->all();
         } elseif ($this->module === 'projects') {
             $this->title = 'Pembangunan';
             $this->columns = ['thumbnail' => 'Foto', 'title' => 'Judul', 'year' => 'Tahun', 'source_fund' => 'Sumber', 'progress_percentage' => 'Progress', 'coordinates' => 'Lokasi'];
             $query = DB::table('development_projects')->where('village_id', $this->villageId);
+            $this->applySearch($query, ['title', 'slug', 'year', 'location', 'source_fund', 'volume', 'status', 'description']);
             $this->totalRows = (clone $query)->count();
             $this->page = min($this->page, max((int) ceil($this->totalRows / $this->perPage), 1));
             $this->rows = $query->orderByDesc('year')->forPage($this->page, $this->perPage)->get()->map(fn($row): array => (array) $row)->all();
@@ -193,6 +230,7 @@ new class extends Component {
             $this->title = 'Unduhan Berkas';
             $this->columns = ['title' => 'Judul', 'file_url' => 'URL', 'published_at' => 'Tanggal'];
             $query = DB::table('downloadable_files')->where('village_id', $this->villageId);
+            $this->applySearch($query, ['title', 'slug', 'description', 'file_url', 'published_at']);
             $this->totalRows = (clone $query)->count();
             $this->page = min($this->page, max((int) ceil($this->totalRows / $this->perPage), 1));
             $this->rows = $query->orderByDesc('published_at')->forPage($this->page, $this->perPage)->get()->map(fn($row): array => (array) $row)->all();
@@ -200,6 +238,7 @@ new class extends Component {
             $this->title = 'Desa Cantik';
             $this->columns = ['thumbnail' => 'Preview', 'title' => 'Judul', 'category_name' => 'Kategori', 'content_type' => 'Jenis', 'published_at' => 'Tanggal', 'is_published' => 'Status'];
             $query = DB::table('desa_cantik_posts')->join('desa_cantik_categories', 'desa_cantik_posts.category_id', '=', 'desa_cantik_categories.id')->where('desa_cantik_posts.village_id', $this->villageId);
+            $this->applySearch($query, ['desa_cantik_posts.title', 'desa_cantik_posts.slug', 'desa_cantik_posts.description', 'desa_cantik_posts.content_type', 'desa_cantik_posts.published_at', 'desa_cantik_categories.name', 'desa_cantik_categories.type']);
             $this->totalRows = (clone $query)->count('desa_cantik_posts.id');
             $this->page = min($this->page, max((int) ceil($this->totalRows / $this->perPage), 1));
             $this->rows = $query
@@ -212,59 +251,41 @@ new class extends Component {
         }
     }
 
+    private function applySearch($query, array $columns): void
+    {
+        if (trim($this->search) === '') {
+            return;
+        }
+
+        $search = '%'.strtolower(trim($this->search)).'%';
+        $query->where(function ($query) use ($columns, $search): void {
+            foreach ($columns as $column) {
+                $query->orWhereRaw('LOWER(COALESCE('.$this->searchExpression($column).", '')) LIKE ?", [$search]);
+            }
+        });
+    }
+
+    private function searchExpression(string $column): string
+    {
+        return match (DB::connection()->getDriverName()) {
+            'mysql', 'mariadb' => "CAST({$column} AS CHAR)",
+            default => "CAST({$column} AS TEXT)",
+        };
+    }
+
     private function resetForm(): void
     {
-        $this->reset(['businessImageUpload', 'projectImageUpload', 'documentUpload', 'desaCantikImageUpload', 'desaCantikDocumentUpload']);
+        $this->reset(['businessImageUpload', 'businessPhotoUploads', 'projectImageUpload', 'documentUpload', 'desaCantikImageUpload', 'desaCantikDocumentUpload']);
+        $this->businessPhotos = [];
 
         $this->form = match ($this->module ?? '') {
-            'menus' => ['id' => null, 'parent_id' => '', 'page_id' => '', 'label' => '', 'type' => 'url', 'url' => '', 'target' => '_self', 'sort_order' => 0, 'is_active' => true],
             'businesses' => ['id' => null, 'category_id' => '', 'name' => '', 'slug' => '', 'owner_name' => '', 'whatsapp' => '', 'instagram_url' => '', 'facebook_url' => '', 'tiktok_url' => '', 'address' => '', 'coordinates' => '', 'description' => '', 'featured_image_url' => '', 'worker_count' => 0, 'hamlet' => '', 'is_active' => true],
+            'bumdes' => ['id' => null, 'category_id' => '', 'name' => '', 'slug' => '', 'manager_name' => '', 'whatsapp' => '', 'instagram_url' => '', 'facebook_url' => '', 'tiktok_url' => '', 'address' => '', 'coordinates' => '', 'description' => '', 'featured_image_url' => '', 'worker_count' => 0, 'is_active' => true],
             'projects' => ['id' => null, 'title' => '', 'slug' => '', 'year' => (int) date('Y'), 'location' => '', 'coordinates' => '', 'source_fund' => '', 'budget_amount' => 0, 'volume' => '', 'progress_percentage' => 0, 'status' => 'planned', 'description' => '', 'image_url' => ''],
             'files' => ['id' => null, 'title' => '', 'slug' => '', 'description' => '', 'file_url' => '', 'published_at' => now()->toDateString(), 'is_published' => true],
             'desa-cantik' => ['id' => null, 'category_id' => '', 'title' => '', 'slug' => '', 'description' => '', 'content_type' => 'pdf', 'image_url' => '', 'file_url' => '', 'external_url' => '', 'published_at' => now()->toDateString(), 'is_published' => true],
             default => [],
         };
-    }
-
-    private function saveMenu(): void
-    {
-        $this->validate(
-            [
-                'form.label' => ['required', 'string', 'max:255'],
-                'form.type' => ['required', 'in:url,page'],
-                'form.parent_id' => ['nullable', 'integer'],
-                'form.page_id' => ['nullable', 'integer'],
-                'form.url' => ['nullable', 'string', 'max:255'],
-                'form.target' => ['required', 'in:_self,_blank'],
-                'form.sort_order' => ['required', 'integer', 'min:0'],
-                'form.is_active' => ['boolean'],
-            ],
-            [],
-            [
-                'form.label' => 'Label',
-                'form.type' => 'Jenis',
-                'form.parent_id' => 'Menu Induk',
-                'form.page_id' => 'Halaman',
-                'form.url' => 'Tautan',
-                'form.target' => 'Buka Tautan',
-                'form.sort_order' => 'Urutan',
-                'form.is_active' => 'Status',
-            ],
-        );
-
-        $this->upsert('navigation_items', [
-            'id' => $this->form['id'] ?? null,
-            'menu_id' => $this->publicMenuId(),
-            'village_id' => $this->villageId,
-            'parent_id' => $this->form['parent_id'] ?: null,
-            'page_id' => $this->form['type'] === 'page' ? ($this->form['page_id'] ?: null) : null,
-            'label' => $this->form['label'],
-            'type' => $this->form['type'],
-            'url' => $this->form['type'] === 'url' ? $this->form['url'] : null,
-            'target' => $this->form['target'] ?: '_self',
-            'sort_order' => (int) $this->form['sort_order'],
-            'is_active' => (bool) $this->form['is_active'],
-        ]);
     }
 
     private function saveBusiness(): void
@@ -283,6 +304,8 @@ new class extends Component {
                 'form.worker_count' => ['required', 'integer', 'min:0'],
                 'form.is_active' => ['boolean'],
                 'businessImageUpload' => ['nullable', 'image', 'max:4096'],
+                'businessPhotoUploads' => ['nullable', 'array'],
+                'businessPhotoUploads.*' => ['image', 'max:4096'],
             ],
             [],
             [
@@ -298,6 +321,8 @@ new class extends Component {
                 'form.worker_count' => 'Jumlah Pekerja',
                 'form.is_active' => 'Status',
                 'businessImageUpload' => 'Gambar UMKM',
+                'businessPhotoUploads' => 'Foto Galeri UMKM',
+                'businessPhotoUploads.*' => 'Foto Galeri UMKM',
             ],
         );
 
@@ -309,7 +334,60 @@ new class extends Component {
         $payload = $this->form;
         unset($payload['coordinates']);
 
-        $this->upsert('businesses', [...$payload, ...$coordinates, 'village_id' => $this->villageId, 'category_id' => $this->form['category_id'] ?: null, 'slug' => UniqueSlug::make('businesses', $this->form['name'], $this->form['id']), 'instagram_url' => $this->form['instagram_url'] ?: null, 'facebook_url' => $this->form['facebook_url'] ?: null, 'tiktok_url' => $this->form['tiktok_url'] ?: null, 'worker_count' => (int) $this->form['worker_count'], 'is_active' => (bool) $this->form['is_active']]);
+        $businessId = $this->upsert('businesses', [...$payload, ...$coordinates, 'village_id' => $this->villageId, 'category_id' => $this->form['category_id'] ?: null, 'slug' => UniqueSlug::make('businesses', $this->form['name'], $this->form['id']), 'instagram_url' => $this->form['instagram_url'] ?: null, 'facebook_url' => $this->form['facebook_url'] ?: null, 'tiktok_url' => $this->form['tiktok_url'] ?: null, 'worker_count' => (int) $this->form['worker_count'], 'is_active' => (bool) $this->form['is_active']]);
+
+        $this->storeBusinessPhotos($businessId);
+    }
+
+    private function saveBumdes(): void
+    {
+        $this->validate(
+            [
+                'form.name' => ['required', 'string', 'max:255'],
+                'form.category_id' => ['nullable', 'integer'],
+                'form.manager_name' => ['nullable', 'string', 'max:255'],
+                'form.whatsapp' => ['nullable', 'string', 'max:40'],
+                'form.instagram_url' => ['nullable', 'url', 'max:2048'],
+                'form.facebook_url' => ['nullable', 'url', 'max:2048'],
+                'form.tiktok_url' => ['nullable', 'url', 'max:2048'],
+                'form.address' => ['nullable', 'string'],
+                'form.coordinates' => ['nullable', 'string', new ValidCoordinates()],
+                'form.worker_count' => ['required', 'integer', 'min:0'],
+                'form.is_active' => ['boolean'],
+                'businessImageUpload' => ['nullable', 'image', 'max:4096'],
+                'businessPhotoUploads' => ['nullable', 'array'],
+                'businessPhotoUploads.*' => ['image', 'max:4096'],
+            ],
+            [],
+            [
+                'form.name' => 'Nama BUMDES',
+                'form.category_id' => 'Kategori',
+                'form.manager_name' => 'Pengelola',
+                'form.whatsapp' => 'WhatsApp',
+                'form.instagram_url' => 'Instagram',
+                'form.facebook_url' => 'Facebook',
+                'form.tiktok_url' => 'Tiktok',
+                'form.address' => 'Alamat BUMDES',
+                'form.coordinates' => 'Kordinat',
+                'form.worker_count' => 'Jumlah Pekerja',
+                'form.is_active' => 'Status',
+                'businessImageUpload' => 'Gambar BUMDES',
+                'businessPhotoUploads' => 'Foto Galeri BUMDES',
+                'businessPhotoUploads.*' => 'Foto Galeri BUMDES',
+            ],
+        );
+
+        if ($this->businessImageUpload) {
+            $this->form['featured_image_url'] = app(OptimizedImageStorage::class)->replace($this->businessImageUpload, 'bumdes-images', $this->form['featured_image_url'] ?: null);
+        }
+
+        $coordinates = $this->form['coordinates'] !== '' ? CoordinatePair::parse($this->form['coordinates']) : ['latitude' => null, 'longitude' => null];
+        $payload = $this->form;
+        unset($payload['coordinates']);
+
+        $bumdesId = $this->upsert('bumdes', [...$payload, ...$coordinates, 'village_id' => $this->villageId, 'category_id' => $this->form['category_id'] ?: null, 'slug' => UniqueSlug::make('bumdes', $this->form['name'], $this->form['id']), 'instagram_url' => $this->form['instagram_url'] ?: null, 'facebook_url' => $this->form['facebook_url'] ?: null, 'tiktok_url' => $this->form['tiktok_url'] ?: null, 'worker_count' => (int) $this->form['worker_count'], 'is_active' => (bool) $this->form['is_active']]);
+
+        $this->storeBusinessPhotos($bumdesId);
     }
 
     private function saveProject(): void
@@ -460,7 +538,7 @@ new class extends Component {
         ]);
     }
 
-    private function upsert(string $table, array $payload): void
+    private function upsert(string $table, array $payload): int
     {
         $id = $payload['id'] ?? null;
         unset($payload['id']);
@@ -468,9 +546,80 @@ new class extends Component {
 
         if ($id) {
             DB::table($table)->where('village_id', $this->villageId)->where('id', $id)->update($payload);
+
+            return (int) $id;
         } else {
-            DB::table($table)->insert([...$payload, 'created_at' => now()]);
+            return (int) DB::table($table)->insertGetId([...$payload, 'created_at' => now()]);
         }
+    }
+
+    private function loadBusinessPhotos(int $businessId): void
+    {
+        $this->businessPhotos = DB::table($this->photoTable())
+            ->where('village_id', $this->villageId)
+            ->where($this->photoForeignKey(), $businessId)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($row): array => (array) $row)
+            ->all();
+    }
+
+    private function storeBusinessPhotos(int $businessId): void
+    {
+        if ($this->businessPhotoUploads === []) {
+            return;
+        }
+
+        $storage = app(OptimizedImageStorage::class);
+        $sortOrder = (int) DB::table($this->photoTable())
+            ->where('village_id', $this->villageId)
+            ->where($this->photoForeignKey(), $businessId)
+            ->max('sort_order');
+
+        foreach ($this->businessPhotoUploads as $upload) {
+            $sortOrder++;
+            DB::table($this->photoTable())->insert([
+                'village_id' => $this->villageId,
+                $this->photoForeignKey() => $businessId,
+                'image_url' => $storage->store($upload, $this->galleryDirectory(), 'gallery'),
+                'sort_order' => $sortOrder,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function deleteBusinessPhotos(int $businessId): void
+    {
+        $photos = DB::table($this->photoTable())
+            ->where('village_id', $this->villageId)
+            ->where($this->photoForeignKey(), $businessId)
+            ->get();
+
+        foreach ($photos as $photo) {
+            app(OptimizedImageStorage::class)->delete($photo->image_url);
+        }
+
+        DB::table($this->photoTable())
+            ->where('village_id', $this->villageId)
+            ->where($this->photoForeignKey(), $businessId)
+            ->delete();
+    }
+
+    private function photoTable(): string
+    {
+        return $this->module === 'bumdes' ? 'bumdes_photos' : 'business_photos';
+    }
+
+    private function photoForeignKey(): string
+    {
+        return $this->module === 'bumdes' ? 'bumdes_id' : 'business_id';
+    }
+
+    private function galleryDirectory(): string
+    {
+        return $this->module === 'bumdes' ? 'bumdes-gallery' : 'business-gallery';
     }
 
     private function deletePublicFile(?string $url): void
@@ -485,8 +634,8 @@ new class extends Component {
     private function table(): string
     {
         return match ($this->module) {
-            'menus' => 'navigation_items',
             'businesses' => 'businesses',
+            'bumdes' => 'bumdes',
             'projects' => 'development_projects',
             'files' => 'downloadable_files',
             'desa-cantik' => 'desa_cantik_posts',
@@ -494,9 +643,27 @@ new class extends Component {
         };
     }
 
-    private function publicMenuId(): int
+    private function ensureBumdesCategories(): void
     {
-        return (int) (DB::table('navigation_menus')->where('village_id', $this->villageId)->where('location', 'public')->value('id') ?: DB::table('navigation_menus')->insertGetId(['village_id' => $this->villageId, 'name' => 'Navbar Publik', 'location' => 'public', 'created_at' => now(), 'updated_at' => now()]));
+        if ($this->module !== 'bumdes') {
+            return;
+        }
+
+        foreach ([['Usaha Desa', 'usaha-desa'], ['Layanan', 'layanan'], ['Perdagangan', 'perdagangan']] as [$name, $slug]) {
+            $exists = DB::table('bumdes_categories')->where('village_id', $this->villageId)->where('name', $name)->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            DB::table('bumdes_categories')->insert([
+                'village_id' => $this->villageId,
+                'name' => $name,
+                'slug' => UniqueSlug::make('bumdes_categories', $slug . '-' . $this->villageId),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 
     private function ensureDesaCantikCategories(): void
@@ -544,103 +711,24 @@ new class extends Component {
         <div class="flex flex-col gap-3 border-b border-zinc-200 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="font-black">{{ $title }}</h2>
-                <p class="text-sm text-zinc-500">
-                    {{ $module === 'menus' ? 'Susun menu utama dan submenu sesuai urutan navigasi.' : 'Tambah dan edit data menggunakan modal.' }}
-                </p>
+                <p class="text-sm text-zinc-500">Tambah dan edit data menggunakan modal.</p>
             </div>
             <button type="button" wire:click="create"
                 class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white">
                 <i class="fa-solid fa-plus"></i>
-                {{ $module === 'menus' ? 'Tambah Menu' : 'Tambah Data' }}
+                Tambah Data
             </button>
         </div>
 
-        @if ($module === 'menus')
-            @php($mainMenus = collect($rows)->whereNull('parent_id')->sortBy('sort_order'))
-            <div class="space-y-3 bg-zinc-50 p-5">
-                @forelse($mainMenus as $mainMenu)
-                    @php($children = collect($rows)->where('parent_id', $mainMenu['id'])->sortBy('sort_order'))
-                    <article class="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-                        <div class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="flex min-w-0 items-start gap-3">
-                                <div
-                                    class="grid size-10 shrink-0 place-items-center rounded-md bg-emerald-50 font-black text-emerald-700">
-                                    {{ $mainMenu['sort_order'] }}
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="font-black text-zinc-950">{{ $mainMenu['label'] }}</h3>
-                                        <x-admin.pill :value="$mainMenu['type']" />
-                                        <x-admin.pill :value="$mainMenu['is_active'] ? 'active' : 'inactive'" />
-                                        <span
-                                            class="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-bold text-zinc-600">{{ $children->count() }}
-                                            submenu</span>
-                                    </div>
-                                    <p class="mt-1 truncate text-sm text-zinc-500">
-                                        {{ $mainMenu['type'] === 'page' ? ($mainMenu['page_title'] ?: 'Halaman belum dipilih') : ($mainMenu['url'] ?: 'URL belum diisi') }}
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="flex shrink-0 gap-2">
-                                <button type="button" wire:click="edit({{ $mainMenu['id'] }})"
-                                    class="inline-flex min-h-9 items-center gap-2 rounded-md bg-zinc-100 px-3 text-xs font-bold hover:bg-zinc-200">
-                                    <i class="fa-solid fa-pen"></i> Edit
-                                </button>
-                                <button type="button" wire:click="delete({{ $mainMenu['id'] }})"
-                                    wire:confirm="Hapus menu utama beserta seluruh submenunya?"
-                                    class="inline-flex min-h-9 items-center gap-2 rounded-md bg-red-50 px-3 text-xs font-bold text-red-700 hover:bg-red-100">
-                                    <i class="fa-solid fa-trash"></i> Hapus
-                                </button>
-                            </div>
-                        </div>
-
-                        @if ($children->isNotEmpty())
-                            <div class="border-t border-zinc-200 bg-zinc-50/70 px-4 py-3">
-                                <div class="ml-5 space-y-2 border-l-2 border-emerald-200 pl-4">
-                                    @foreach ($children as $child)
-                                        <div
-                                            class="flex flex-col gap-3 rounded-md border border-zinc-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-                                            <div class="flex min-w-0 items-center gap-3">
-                                                <i class="fa-solid fa-turn-up rotate-90 text-emerald-500"></i>
-                                                <div class="min-w-0">
-                                                    <div class="flex flex-wrap items-center gap-2">
-                                                        <span
-                                                            class="font-bold text-zinc-900">{{ $child['label'] }}</span>
-                                                        <x-admin.pill :value="$child['type']" />
-                                                        <x-admin.pill :value="$child['is_active'] ? 'active' : 'inactive'" />
-                                                        <span class="text-xs font-bold text-zinc-400">Urutan
-                                                            {{ $child['sort_order'] }}</span>
-                                                    </div>
-                                                    <p class="mt-1 truncate text-xs text-zinc-500">
-                                                        {{ $child['type'] === 'page' ? ($child['page_title'] ?: 'Halaman belum dipilih') : ($child['url'] ?: 'URL belum diisi') }}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div class="flex shrink-0 gap-2">
-                                                <button type="button" wire:click="edit({{ $child['id'] }})"
-                                                    class="inline-flex min-h-9 items-center gap-2 rounded-md bg-zinc-100 px-3 text-xs font-bold hover:bg-zinc-200">
-                                                    <i class="fa-solid fa-pen"></i> Edit
-                                                </button>
-                                                <button type="button" wire:click="delete({{ $child['id'] }})"
-                                                    wire:confirm="Hapus submenu ini?"
-                                                    class="inline-flex min-h-9 items-center gap-2 rounded-md bg-red-50 px-3 text-xs font-bold text-red-700 hover:bg-red-100">
-                                                    <i class="fa-solid fa-trash"></i> Hapus
-                                                </button>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-                    </article>
-                @empty
-                    <div
-                        class="rounded-lg border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-500">
-                        Belum ada menu. Tambahkan menu utama terlebih dahulu.
-                    </div>
-                @endforelse
+            <div class="grid gap-3 border-b border-zinc-200 p-5 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <x-admin.input label="Cari {{ $title }}" model="search" placeholder="Cari data berdasarkan judul, nama, kategori, status, atau keterangan" />
+                <button type="button" wire:click="resetSearch"
+                    class="inline-flex min-h-11 items-center justify-center gap-2 self-end rounded-md border border-zinc-300 px-3 text-sm font-bold text-zinc-700">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Reset
+                </button>
             </div>
-        @else
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
                     <thead class="bg-zinc-50 text-xs uppercase text-zinc-500">
@@ -657,10 +745,10 @@ new class extends Component {
                                 @foreach ($columns as $key => $label)
                                     <td class="px-5 py-4">
                                         @if ($key === 'thumbnail')
-                                            @php($imageUrl = $module === 'businesses' ? $row['featured_image_url'] ?? null : $row['image_url'] ?? null)
+                                            @php($imageUrl = in_array($module, ['businesses', 'bumdes'], true) ? $row['featured_image_url'] ?? null : $row['image_url'] ?? null)
                                             @if ($imageUrl)
                                                 <img src="{{ $imageUrl }}"
-                                                    alt="Thumbnail {{ $module === 'businesses' ? $row['name'] : $row['title'] }}"
+                                                    alt="Thumbnail {{ in_array($module, ['businesses', 'bumdes'], true) ? $row['name'] : $row['title'] }}"
                                                     loading="lazy"
                                                     class="size-16 rounded-lg border border-zinc-200 object-cover">
                                             @else
@@ -733,7 +821,6 @@ new class extends Component {
                         class="rounded-md border border-zinc-200 px-3 py-2 font-bold disabled:opacity-40">Berikutnya</button>
                 </div>
             </div>
-        @endif
     </section>
 
     @if ($showModal)
@@ -754,49 +841,19 @@ new class extends Component {
                 </div>
 
                 <form wire:submit="save" class="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-                    @if ($module === 'menus')
-                        <div class="rounded-md border border-zinc-200 bg-zinc-50 p-4 sm:col-span-2 lg:col-span-3">
-                            <div class="flex items-start gap-3">
-                                <div
-                                    class="grid size-10 shrink-0 place-items-center rounded-md bg-emerald-100 text-emerald-700">
-                                    <i
-                                        class="fa-solid {{ $form['parent_id'] ? 'fa-turn-up rotate-90' : 'fa-bars' }}"></i>
-                                </div>
-                                <div>
-                                    <div class="font-black">{{ $form['parent_id'] ? 'Submenu' : 'Menu Utama' }}</div>
-                                    <p class="mt-1 text-sm text-zinc-500">Pilih menu induk jika item ini ingin
-                                        ditampilkan sebagai submenu.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <x-admin.input label="Label Menu" model="form.label" class="lg:col-span-2" />
-                        <x-admin.input label="Urutan" model="form.sort_order" type="number" />
-                        <x-admin.select label="Menu Induk" model="form.parent_id" :options="collect($parentMenuOptions)
-                            ->reject(fn($item) => (int) $item['id'] === (int) ($form['id'] ?? 0))
-                            ->pluck('label', 'id')
-                            ->prepend('Tidak ada - jadikan menu utama', '')
-                            ->all()"
-                            class="lg:col-span-2" />
-                        <x-admin.select label="Status" model="form.is_active" :options="[1 => 'Aktif', 0 => 'Nonaktif']" />
-                        <x-admin.select label="Jenis Tujuan" model="form.type" :options="['url' => 'URL / Tautan', 'page' => 'Halaman Khusus']" />
-
-                        @if ($form['type'] === 'page')
-                            <x-admin.select label="Halaman Tujuan" model="form.page_id" :options="collect($pages)->pluck('title', 'id')->prepend('Pilih halaman', '')->all()"
-                                class="lg:col-span-2" />
-                        @else
-                            <x-admin.input label="URL Tujuan" model="form.url"
-                                placeholder="/alamat-halaman atau https://..." class="lg:col-span-2" />
-                        @endif
-
-                        <x-admin.select label="Buka Tautan" model="form.target" :options="['_self' => 'Di tab yang sama', '_blank' => 'Di tab baru']" />
-                    @elseif($module === 'businesses')
-                        <x-admin.input label="Nama Usaha" model="form.name" />
-                        <x-admin.select label="Kategori" model="form.category_id" :options="collect($businessCategories)
+                    @if(in_array($module, ['businesses', 'bumdes'], true))
+                        @php($isBumdes = $module === 'bumdes')
+                        @php($entityLabel = $isBumdes ? 'BUMDES' : 'UMKM')
+                        <x-admin.input :label="$isBumdes ? 'Nama BUMDES' : 'Nama Usaha'" model="form.name" />
+                        <x-admin.select label="Kategori" model="form.category_id" :options="collect($isBumdes ? $bumdesCategories : $businessCategories)
                             ->pluck('name', 'id')
                             ->prepend('Pilih kategori', '')
                             ->all()" />
-                        <x-admin.input label="Pemilik" model="form.owner_name" />
+                        @if($isBumdes)
+                            <x-admin.input label="Pengelola" model="form.manager_name" />
+                        @else
+                            <x-admin.input label="Pemilik" model="form.owner_name" />
+                        @endif
                         <x-admin.input label="WhatsApp" model="form.whatsapp" />
                         <x-admin.input label="Instagram" model="form.instagram_url" type="url"
                             placeholder="https://instagram.com/namausaha" />
@@ -804,7 +861,9 @@ new class extends Component {
                             placeholder="https://facebook.com/namausaha" />
                         <x-admin.input label="TikTok" model="form.tiktok_url" type="url"
                             placeholder="https://tiktok.com/@namausaha" />
-                        <x-admin.input label="Dusun" model="form.hamlet" />
+                        @unless($isBumdes)
+                            <x-admin.input label="Dusun" model="form.hamlet" />
+                        @endunless
                         <x-admin.input label="Pekerja" model="form.worker_count" type="number" />
                         <x-admin.textarea label="Alamat" model="form.address" class="lg:col-span-3" />
                         <x-admin.input label="Koordinat (Latitude, Longitude)" model="form.coordinates"
@@ -823,7 +882,8 @@ new class extends Component {
                             @endif
                         </div>
                         <div class="lg:col-span-3">
-                            <label class="text-sm font-bold">Gambar UMKM</label>
+                            <label class="text-sm font-bold">Gambar {{ $entityLabel }}</label>
+                            <p class="mt-1 text-xs text-zinc-500">Digunakan sebagai cover utama pada daftar {{ $entityLabel }}.</p>
                             <input type="file" wire:model="businessImageUpload" accept="image/*"
                                 class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
                             @error('businessImageUpload')
@@ -832,11 +892,49 @@ new class extends Component {
                             <div wire:loading wire:target="businessImageUpload" class="mt-1 text-sm text-zinc-500">
                                 Mengunggah gambar...</div>
                             @if ($businessImageUpload)
-                                <img src="{{ $businessImageUpload->temporaryUrl() }}" alt="Preview gambar UMKM"
+                                <img src="{{ $businessImageUpload->temporaryUrl() }}" alt="Preview gambar {{ $entityLabel }}"
                                     class="mt-2 h-32 w-full rounded-md object-cover">
                             @elseif($form['featured_image_url'])
                                 <img src="{{ $form['featured_image_url'] }}" alt="Gambar saat ini"
                                     class="mt-2 h-32 w-full rounded-md object-cover">
+                            @endif
+                        </div>
+                        <div class="lg:col-span-3">
+                            <label class="text-sm font-bold">Foto Galeri {{ $entityLabel }}</label>
+                            <p class="mt-1 text-xs text-zinc-500">Pilih lebih dari satu foto untuk gallery detail {{ $entityLabel }} di website publik.</p>
+                            <input type="file" wire:model="businessPhotoUploads" accept="image/*" multiple
+                                class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                            @error('businessPhotoUploads')
+                                <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                            @enderror
+                            @error('businessPhotoUploads.*')
+                                <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                            @enderror
+                            <div wire:loading wire:target="businessPhotoUploads" class="mt-1 text-sm text-zinc-500">
+                                Mengunggah foto galeri...</div>
+                            @if ($businessPhotoUploads)
+                                <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                    @foreach ($businessPhotoUploads as $photoUpload)
+                                        <img src="{{ $photoUpload->temporaryUrl() }}" alt="Preview foto galeri {{ $entityLabel }}"
+                                            class="h-24 w-full rounded-md object-cover">
+                                    @endforeach
+                                </div>
+                            @endif
+                            @if ($businessPhotos)
+                                <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                    @foreach ($businessPhotos as $photo)
+                                        <div class="group relative overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+                                            <img src="{{ $photo['image_url'] }}" alt="Foto galeri {{ $entityLabel }}"
+                                                class="h-24 w-full object-cover">
+                                            <button type="button" wire:click="removeBusinessPhoto({{ $photo['id'] }})"
+                                                wire:confirm="Hapus foto galeri ini?"
+                                                class="absolute right-2 top-2 grid size-8 place-items-center rounded-md bg-red-600 text-white opacity-95 shadow-lg"
+                                                aria-label="Hapus foto galeri">
+                                                <i class="fa-solid fa-trash text-xs"></i>
+                                            </button>
+                                        </div>
+                                    @endforeach
+                                </div>
                             @endif
                         </div>
                         <x-admin.textarea label="Deskripsi" model="form.description" class="lg:col-span-3" />

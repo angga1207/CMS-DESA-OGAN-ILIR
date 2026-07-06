@@ -8,10 +8,13 @@ use App\Support\PublicSiteCache;
 use App\Support\VillageAdm4Resolver;
 use App\Support\VillageFeatures;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 final class VillageProvisioner
 {
+    private const DEFAULT_VILLAGE_USER_PASSWORD = 'D3saOganIliR_@';
+
     public function provision(int $villageId, ?int $authorId = null): void
     {
         $village = DB::table('villages')->where('id', $villageId)->first();
@@ -26,6 +29,7 @@ final class VillageProvisioner
             $shortName = preg_replace('/^desa\s+/i', '', $name) ?: $name;
             $year = (int) now()->year;
 
+            $this->users($villageId, $name, (string) $village->slug);
             VillageFeatures::syncDefaults($villageId);
             $this->settings($villageId);
             $this->widgets($villageId, $name, (string) $village->district);
@@ -35,6 +39,7 @@ final class VillageProvisioner
             $this->navigation($villageId, $pageIds);
             $this->banners($villageId, $name);
             $this->businesses($villageId, $name);
+            $this->bumdes($villageId, $name);
             $this->gallery($villageId, $name);
             $this->videosAndDownloads($villageId, $name);
             $this->projects($villageId, $name, $year);
@@ -50,6 +55,60 @@ final class VillageProvisioner
         });
     }
 
+    private function users(int $villageId, string $name, string $slug): void
+    {
+        $shortName = preg_replace('/^desa\s+/i', '', $name) ?: $name;
+        $usernameSuffix = $this->usernameSuffix($slug, $shortName);
+        $emailSuffix = Str::slug($slug) ?: 'desa';
+
+        foreach ([
+            'admin_desa' => ['Admin Desa', 'admin'],
+            'editor' => ['Editor Desa', 'editor'],
+        ] as $role => [$label, $prefix]) {
+            $exists = DB::table('users')
+                ->where('village_id', $villageId)
+                ->where('role', $role)
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            DB::table('users')->insert([
+                'village_id' => $villageId,
+                'name' => "{$label} {$shortName}",
+                'username' => "{$prefix}{$usernameSuffix}",
+                'email' => "{$prefix}.{$emailSuffix}.{$villageId}@desa.oganilirkab.go.id",
+                'password' => Hash::make(self::DEFAULT_VILLAGE_USER_PASSWORD),
+                'role' => $role,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function usernameSuffix(string $slug, string $fallbackName): string
+    {
+        $slug = Str::slug($slug) ?: Str::slug($fallbackName);
+        $slug = preg_replace('/^desa-/', '', $slug) ?: $slug;
+        $slug = preg_replace_callback('/\d/', function (array $matches): string {
+            return [
+                '0' => 'nol',
+                '1' => 'satu',
+                '2' => 'dua',
+                '3' => 'tiga',
+                '4' => 'empat',
+                '5' => 'lima',
+                '6' => 'enam',
+                '7' => 'tujuh',
+                '8' => 'delapan',
+                '9' => 'sembilan',
+            ][$matches[0]];
+        }, $slug);
+
+        return preg_replace('/[^a-z]/', '', $slug) ?: 'desa';
+    }
+
     private function settings(int $villageId): void
     {
         $settings = [
@@ -62,6 +121,7 @@ final class VillageProvisioner
             'theme_surface' => ['#f7f7f2', 'text'],
             'theme_text' => ['#17221f', 'text'],
             'font_style' => ['classic', 'text'],
+            'home_shortcuts_enabled' => ['1', 'boolean'],
             'home_shortcuts' => [json_encode([
                 ['label' => 'Tentang Desa', 'url' => '/tentang'],
                 ['label' => 'Data & Statistik', 'url' => '/statistik'],
@@ -88,7 +148,7 @@ final class VillageProvisioner
             ['weather_information', 'Informasi Cuaca', 'header', ['adm4' => $adm4, 'forecast_days' => '3'], 3, false],
             ['announcement_ticker', 'Info Prioritas Pembangunan', 'below_banner', ['text' => 'Musyawarah desa, transparansi anggaran, dan progres pembangunan dapat dipantau melalui kanal informasi publik.', 'link_url' => '/pembangunan', 'link_label' => 'Lihat Pembangunan'], 1],
             ['latest_articles', 'Artikel Terbaru', 'sidebar', ['limit' => '5', 'show_thumbnail' => true], 1],
-            ['complaint_link', 'Kanal Pengaduan Masyarakat', 'floating_left', ['button_label' => 'Sampaikan Pengaduan', 'url' => 'https://wa.me/6281200000000', 'open_new_tab' => true], 1],
+            ['complaint_link', 'Widget Melayang', 'floating_left', ['button_label' => 'Buka Tautan', 'url' => 'https://wa.me/6281200000000', 'open_new_tab' => true], 1],
             ['whatsapp_button', 'Hubungi Desa', 'floating_right', ['phone' => '6281200000000', 'button_label' => 'Hubungi Desa', 'message' => "Halo, saya ingin bertanya mengenai layanan {$name}."], 1],
             ['visitor_statistics', 'Statistik Pengunjung', 'footer', ['period_days' => '30', 'show_unique' => true, 'show_total' => true], 1],
             ['office_hours', 'Jam Pelayanan', 'footer', ['weekdays' => '08.00 - 15.30 WIB', 'saturday' => 'Tutup', 'sunday' => 'Tutup', 'note' => 'Pelayanan mengikuti hari kerja pemerintah.'], 2],
@@ -226,16 +286,16 @@ final class VillageProvisioner
         $profileId = DB::table('navigation_items')->insertGetId([
             'village_id' => $villageId,
             'menu_id' => $menuId,
-            'page_id' => $pages['profile'],
             'label' => 'Profil',
-            'type' => 'page',
+            'type' => 'url',
+            'url' => '/tentang',
             'sort_order' => 2,
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        foreach ([['Beranda', '/', 1], ['Berita', '/artikel', 3], ['Desa Cantik', '/desa-cantik', 4], ['Statistik', '/statistik', 5], ['Anggaran', '/anggaran', 6], ['UMKM', '/umkm', 7], ['Galeri', '/galeri', 8], ['Pembangunan', '/pembangunan', 9], ['Peta', '/peta-sebaran', 10], ['Download', '/download', 11]] as [$label, $url, $sortOrder]) {
+        foreach ([['Beranda', '/', 1], ['Berita', '/artikel', 3], ['Desa Cantik', '/desa-cantik', 4], ['Statistik', '/statistik', 5], ['Anggaran', '/anggaran', 6], ['UMKM', '/umkm', 7], ['BUMDES', '/bumdes', 8], ['Galeri', '/galeri', 9], ['Pembangunan', '/pembangunan', 10], ['Peta', '/peta-sebaran', 11], ['Download', '/download', 12]] as [$label, $url, $sortOrder]) {
             DB::table('navigation_items')->insert([
                 'village_id' => $villageId,
                 'menu_id' => $menuId,
@@ -318,6 +378,46 @@ final class VillageProvisioner
                 'name' => "Produk {$businessName}",
                 'price' => 10000 + ($index * 5000),
                 'unit' => 'unit',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function bumdes(int $villageId, string $name): void
+    {
+        $categoryIds = [];
+        foreach (['Usaha Desa', 'Layanan', 'Perdagangan'] as $category) {
+            $categoryIds[$category] = DB::table('bumdes_categories')->insertGetId([
+                'village_id' => $villageId,
+                'name' => $category,
+                'slug' => $this->uniqueValue('bumdes_categories', 'slug', Str::slug($category), (string) $villageId),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        foreach ([['BUMDES Maju Bersama', 'Usaha Desa'], ['Unit Layanan Desa', 'Layanan']] as $index => [$bumdesName, $category]) {
+            $bumdesId = DB::table('bumdes')->insertGetId([
+                'village_id' => $villageId,
+                'category_id' => $categoryIds[$category],
+                'name' => $bumdesName,
+                'slug' => $this->uniqueValue('bumdes', 'slug', Str::slug($bumdesName), (string) $villageId),
+                'manager_name' => 'Pengelola '.$name,
+                'address' => $name,
+                'description' => 'Contoh data BUMDES yang dapat diganti melalui CMS.',
+                'featured_image_url' => 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80',
+                'worker_count' => 2 + $index,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::table('bumdes_photos')->insert([
+                'village_id' => $villageId,
+                'bumdes_id' => $bumdesId,
+                'image_url' => 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80',
+                'sort_order' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
