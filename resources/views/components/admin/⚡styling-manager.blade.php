@@ -6,8 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
 
-new class extends Component
-{
+new class extends Component {
     private const THEME_PRESETS = [
         'modern-style-1' => [
             'theme_primary' => '#8f1d2c',
@@ -41,9 +40,19 @@ new class extends Component
             'theme_text' => '#151515',
             'font_style' => 'elegant',
         ],
+        'cartoon' => [
+            'theme_primary' => '#f97316',
+            'theme_secondary' => '#1d4ed8',
+            'theme_tertiary' => '#38bdf8',
+            'theme_surface' => '#fff7ed',
+            'theme_text' => '#1f2937',
+            'font_style' => 'cartoon',
+        ],
     ];
 
     public int $villageId = 1;
+
+    public string $previewUrl = '';
 
     public array $settings = [
         'site_theme' => 'modern-style-1',
@@ -53,14 +62,6 @@ new class extends Component
         'theme_surface' => '#f7f7f2',
         'theme_text' => '#17221f',
         'font_style' => 'classic',
-        'home_shortcuts_enabled' => '1',
-    ];
-
-    public array $shortcutLinks = [
-        ['label' => '', 'url' => ''],
-        ['label' => '', 'url' => ''],
-        ['label' => '', 'url' => ''],
-        ['label' => '', 'url' => ''],
     ];
 
     public function mount(): void
@@ -69,18 +70,8 @@ new class extends Component
         $stored = DB::table('site_settings')->where('village_id', $this->villageId)->pluck('value', 'key')->all();
         $this->settings = array_merge($this->settings, array_intersect_key($stored, $this->settings));
         $this->settings['site_theme'] = $this->settings['site_theme'] === 'tanjung-lubuk' ? 'modern-style-1' : $this->settings['site_theme'];
-
-        $shortcuts = json_decode((string) ($stored['home_shortcuts'] ?? '[]'), true);
-        if (is_array($shortcuts)) {
-            foreach (array_slice($shortcuts, 0, 4) as $index => $shortcut) {
-                if (is_array($shortcut)) {
-                    $this->shortcutLinks[$index] = [
-                        'label' => (string) ($shortcut['label'] ?? ''),
-                        'url' => (string) ($shortcut['url'] ?? ''),
-                    ];
-                }
-            }
-        }
+        $websiteUrl = (string) (DB::table('villages')->where('id', $this->villageId)->value('website_url') ?: '');
+        $this->previewUrl = filter_var($websiteUrl, FILTER_VALIDATE_URL) ? rtrim($websiteUrl, '/') : 'http://localhost:3000';
     }
 
     public function updatedSettingsSiteTheme(string $theme): void
@@ -92,55 +83,32 @@ new class extends Component
         }
 
         $this->settings = array_merge($this->settings, $preset);
-        $this->resetValidation([
-            'settings.theme_primary',
-            'settings.theme_secondary',
-            'settings.theme_tertiary',
-            'settings.theme_surface',
-            'settings.theme_text',
-            'settings.font_style',
-        ]);
+        $this->resetValidation(['settings.theme_primary', 'settings.theme_secondary', 'settings.theme_tertiary', 'settings.theme_surface', 'settings.theme_text', 'settings.font_style']);
     }
 
     public function save(): void
     {
         $this->validate([
-            'settings.site_theme' => ['required', 'in:modern-style-1,modern-style-2,smooth-dynamic-style,creative-branding'],
+            'settings.site_theme' => ['required', 'in:modern-style-1,modern-style-2,smooth-dynamic-style,creative-branding,cartoon'],
             'settings.theme_primary' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'settings.theme_secondary' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'settings.theme_tertiary' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'settings.theme_surface' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'settings.theme_text' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'settings.font_style' => ['required', 'in:classic,modern,friendly,elegant,literary,system'],
-            'settings.home_shortcuts_enabled' => ['boolean'],
-            'shortcutLinks' => ['array', 'max:4'],
-            'shortcutLinks.*.label' => ['nullable', 'string', 'max:80'],
-            'shortcutLinks.*.url' => ['nullable', 'string', 'max:2048', 'regex:/^(\/|#)/'],
+            'settings.font_style' => ['required', 'in:classic,modern,friendly,cartoon,elegant,literary,system'],
         ]);
 
         foreach ($this->settings as $key => $value) {
-            $isBoolean = $key === 'home_shortcuts_enabled';
-
             DB::table('site_settings')->updateOrInsert(
                 ['village_id' => $this->villageId, 'key' => $key],
                 [
-                    'value' => $isBoolean ? ((bool) $value ? '1' : '0') : $value,
-                    'type' => $isBoolean ? 'boolean' : 'text',
+                    'value' => $value,
+                    'type' => 'text',
                     'updated_at' => now(),
                     'created_at' => now(),
                 ],
             );
         }
-
-        $shortcuts = collect($this->shortcutLinks)
-            ->filter(fn (array $shortcut): bool => trim($shortcut['label']) !== '' && trim($shortcut['url']) !== '')
-            ->take(4)
-            ->values()
-            ->all();
-        DB::table('site_settings')->updateOrInsert(
-            ['village_id' => $this->villageId, 'key' => 'home_shortcuts'],
-            ['value' => json_encode($shortcuts), 'type' => 'json', 'updated_at' => now(), 'created_at' => now()],
-        );
 
         PublicSiteCache::forget($this->villageId);
         LivewireAlert::title('Tersimpan')->text('Styling website publik berhasil diperbarui.')->success()->timer(1200)->show();
@@ -162,24 +130,28 @@ new class extends Component
                 'modern-style-2' => 'Modern Style 2',
                 'smooth-dynamic-style' => 'Smooth Dynamic Style',
                 'creative-branding' => 'Creative Branding',
+                'cartoon' => 'Cartoon',
             ]" />
             <x-admin.select label="Font Style" model="settings.font_style" :options="[
                 'classic' => 'Classic Editorial',
                 'modern' => 'Modern Geometric',
                 'friendly' => 'Friendly Rounded',
+                'cartoon' => 'Cartoon Playful',
                 'elegant' => 'Elegant Display',
                 'literary' => 'Literary Serif',
                 'system' => 'System Clean',
             ]" />
         </div>
         <p class="mt-3 text-xs leading-5 text-zinc-500">
-            Mengganti template akan langsung menerapkan rekomendasi palet warna dan font. Setelah itu, warna dan font tetap dapat disesuaikan manual sebelum disimpan.
+            Mengganti template akan langsung menerapkan rekomendasi palet warna dan font. Setelah itu, warna dan font
+            tetap dapat disesuaikan manual sebelum disimpan.
         </p>
     </section>
 
     <section class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
         <h2 class="font-black">Palet Warna</h2>
-        <p class="mt-1 text-sm text-zinc-500">Warna diterapkan pada banner, tombol, judul, footer, dan elemen aksen frontend.</p>
+        <p class="mt-1 text-sm text-zinc-500">Warna diterapkan pada banner, tombol, judul, footer, dan elemen aksen
+            frontend.</p>
         <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <x-admin.input label="Primary" model="settings.theme_primary" type="color" />
             <x-admin.input label="Secondary" model="settings.theme_secondary" type="color" />
@@ -187,33 +159,54 @@ new class extends Component
             <x-admin.input label="Latar" model="settings.theme_surface" type="color" />
             <x-admin.input label="Teks" model="settings.theme_text" type="color" />
         </div>
-    </section>
 
-    <section class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-                <h2 class="font-black">Label & Link di Bawah Banner</h2>
-                <p class="mt-1 text-sm text-zinc-500">Maksimal empat item per desa. Gunakan link internal seperti <code>/tentang</code> atau <code>#profil</code>.</p>
-            </div>
-            <label class="inline-flex items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-bold text-zinc-700">
-                <input type="checkbox" wire:model="settings.home_shortcuts_enabled" class="mt-1 rounded border-zinc-300 text-emerald-600">
-                <span>
-                    Tampilkan Home Shortcut
-                    <small class="mt-1 block font-medium leading-5 text-zinc-500">Matikan jika shortcut tidak ingin tampil di frontend.</small>
-                </span>
-            </label>
-        </div>
-        <div class="mt-4 grid gap-3">
-            @foreach($shortcutLinks as $index => $shortcut)
-                <div class="grid gap-3 rounded-lg border border-zinc-200 p-4 sm:grid-cols-[1fr_1.25fr]" wire:key="shortcut-{{ $index }}">
-                    <x-admin.input :label="'Label '.($index + 1)" :model="'shortcutLinks.'.$index.'.label'" />
-                    <x-admin.input :label="'Link '.($index + 1)" :model="'shortcutLinks.'.$index.'.url'" placeholder="/statistik atau #profil" />
-                </div>
-            @endforeach
-        </div>
     </section>
-
     <div class="flex justify-end">
-        <button class="inline-flex min-h-11 items-center justify-center rounded-md bg-emerald-600 px-5 text-sm font-black text-white">Simpan Styling Website</button>
+        <button
+            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-5 text-sm font-black text-white">
+            <i class="fa-solid fa-floppy-disk"></i>Simpan Styling Website
+        </button>
     </div>
+
+    <section class="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm" wire:ignore
+        x-data="{
+            loaded: false,
+            previewUrl: @js($previewUrl),
+            loadPreview() {
+                if (!this.loaded) {
+                    this.loaded = true;
+                    return;
+                }
+
+                this.loaded = false;
+                this.$nextTick(() => this.loaded = true);
+            }
+        }">
+        <div class="flex flex-col gap-3 border-b border-zinc-200 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="font-black">Preview Frontend</h2>
+                <p class="mt-1 text-sm text-zinc-500">{{ $previewUrl }}</p>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" @click="loadPreview()"
+                    class="inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white">
+                    <i class="fa-solid fa-play"></i>
+                    <span x-text="loaded ? 'Muat Ulang' : 'Muat Preview'"></span>
+                </button>
+                <a href="{{ $previewUrl }}" target="_blank" rel="noopener"
+                    class="grid size-10 place-items-center rounded-md border border-zinc-200 text-zinc-600"
+                    title="Buka frontend di tab baru" aria-label="Buka frontend di tab baru">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+            </div>
+        </div>
+        <div class="relative aspect-[16/9] min-h-80 bg-zinc-100">
+            <div x-show="!loaded" class="absolute inset-0 grid place-items-center p-6 text-center text-zinc-500">
+                <i class="fa-solid fa-display text-4xl text-zinc-300"></i>
+            </div>
+            <iframe x-show="loaded" :src="loaded ? previewUrl : 'about:blank'"
+                class="absolute inset-0 h-full w-full bg-white" title="Preview frontend website desa" loading="lazy"
+                referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
+    </section>
 </form>

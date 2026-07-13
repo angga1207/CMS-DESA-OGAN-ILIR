@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Services\OptimizedImageStorage;
 use App\Support\ApplicationVersions;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
@@ -73,10 +74,31 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
     Route::get('/widgets', fn () => view('admin.widgets.index'))->middleware(['admin.role:developer,admin_desa', 'village.feature:widgets'])->name('widgets.index');
     Route::get('/settings', fn () => view('admin.settings.index'))->middleware('admin.role:developer,admin_desa')->name('settings.index');
     Route::get('/styling', fn () => view('admin.styling.index'))->middleware('admin.role:developer,admin_desa')->name('styling.index');
+    Route::get('/home-shortcuts', fn () => view('admin.home-shortcuts.index'))->middleware('admin.role:developer,admin_desa')->name('home-shortcuts.index');
     Route::get('/users', fn () => view('admin.users.index'))->middleware('admin.role:developer,admin_desa')->name('users.index');
-    Route::get('/application-versions', fn () => view('admin.application-versions.index', [
-        'versions' => ApplicationVersions::all(),
-    ]))->middleware('admin.role:developer,admin_desa')->name('application-versions.index');
+    Route::get('/application-versions', function (Request $request) {
+        $versions = ApplicationVersions::all();
+        $releasePaginators = collect($versions)->mapWithKeys(function (array $application, string $type) use ($request): array {
+            $pageName = "{$type}_page";
+            $page = max(1, $request->integer($pageName, 1));
+            $releases = collect($application['releases'] ?? [])->values();
+
+            $paginator = new LengthAwarePaginator(
+                $releases->forPage($page, 5)->all(),
+                $releases->count(),
+                5,
+                $page,
+                [
+                    'path' => $request->url(),
+                    'pageName' => $pageName,
+                ],
+            );
+
+            return [$type => $paginator->withQueryString()];
+        })->all();
+
+        return view('admin.application-versions.index', compact('versions', 'releasePaginators'));
+    })->middleware('admin.role:developer,admin_desa')->name('application-versions.index');
     Route::post('/users/{user}/impersonate', function (Request $request, User $user, ImpersonateManager $impersonate) {
         $actor = $request->user();
 
@@ -107,7 +129,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
     })->name('villages.index');
 
     Route::get('/visitor-statistics', function (Request $request) {
-        abort_unless($request->user()?->role === 'developer', 403);
+        abort_unless(in_array($request->user()?->role, ['developer', 'admin_desa'], true), 403);
 
         return view('admin.visitor-statistics.index');
     })->name('visitor-statistics.index');

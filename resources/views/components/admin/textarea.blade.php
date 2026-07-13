@@ -1,12 +1,12 @@
-@props(['label', 'model', 'placeholder' => null, 'class' => ''])
+@props(['label', 'model', 'placeholder' => null, 'class' => '', 'icon' => 'fa-align-left'])
 
 <div class="{{ $class }}">
-    <label class="text-sm font-bold">{{ $label }}</label>
+    <label class="admin-field-label"><i class="fa-solid {{ $icon }} text-amber-600"></i>{{ $label }}</label>
     <textarea
         wire:model.live="{{ $model }}"
         rows="4"
         placeholder="{{ $placeholder ?? "Tuliskan {$label}" }}"
-        {{ $attributes->except('class')->merge(['class' => 'mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none']) }}
+        {{ $attributes->except('class')->merge(['class' => 'admin-control mt-1 min-h-28']) }}
     ></textarea>
-    @error($model) <div class="mt-1 text-sm text-red-600">{{ $message }}</div> @enderror
+    @error($model) <div class="admin-error">{{ $message }}</div> @enderror
 </div>

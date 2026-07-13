@@ -148,7 +148,7 @@ new class extends Component
             </div>
             <span class="hidden text-xs font-semibold text-zinc-400 sm:block">Diperbarui {{ now()->translatedFormat('d M Y, H.i') }}</span>
         </div>
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             @foreach($contentMetrics as $metric)
                 <a href="{{ $metric['href'] }}" class="group rounded-xl border border-zinc-200/80 bg-white p-5 shadow-[0_8px_28px_-24px_rgba(24,24,27,0.5)] transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_16px_30px_-22px_rgba(5,150,105,0.4)]">
                     <div class="flex items-start justify-between gap-3">

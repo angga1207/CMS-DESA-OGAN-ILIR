@@ -191,30 +191,18 @@ final class VillageProvisioner
             ]);
         }
 
-        foreach ([['Desa', 'village', 1], ['Kabupaten', 'regency', 2]] as [$name, $code, $sortOrder]) {
-            DB::table('content_sources')->insert([
-                'village_id' => $villageId,
-                'name' => $name,
-                'code' => $this->uniqueValue('content_sources', 'code', $code, $villageSlug),
-                'sort_order' => $sortOrder,
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
         return $categories;
     }
 
     private function posts(int $villageId, ?int $authorId, string $name, string $shortName, int $year, array $categories): void
     {
         $posts = [
-            ["Musyawarah {$name} Menetapkan Prioritas Pembangunan {$year}", 'Berita', 'Forum musyawarah desa membahas usulan prioritas pembangunan berbasis kebutuhan warga.', 'village'],
-            ["Pemdes {$shortName} Membuka Pendataan UMKM dan Pelaku Usaha Rumah Tangga", 'Pengumuman', 'Pendataan dilakukan untuk memperkuat pelaku UMKM dan program pemberdayaan ekonomi desa.', 'village'],
-            ['Sertifikasi Pembangunan Jalan Lingkungan', 'Pembangunan', 'Kegiatan sertifikasi memastikan volume dan mutu pekerjaan sesuai rencana anggaran.', 'village'],
-            ['BUMDes Menyiapkan Layanan Usaha Bersama', 'BUMDes', 'BUMDes mengelola aset desa agar dapat dimanfaatkan masyarakat secara tertib.', 'village'],
-            ["BPS Mendampingi {$name} dalam Program Desa Cinta Statistik", 'Desa Cantik', 'Pendampingan memperkuat tata kelola data dan publikasi statistik desa.', 'village'],
-            ['Pemkab Ogan Ilir Mendorong Keterbukaan Informasi Publik Desa', 'Berita', 'Berita kabupaten yang dapat ditampilkan ulang di kanal informasi desa.', 'regency'],
+            ["Musyawarah {$name} Menetapkan Prioritas Pembangunan {$year}", 'Berita', 'Forum musyawarah desa membahas usulan prioritas pembangunan berbasis kebutuhan warga.'],
+            ["Pemdes {$shortName} Membuka Pendataan UMKM dan Pelaku Usaha Rumah Tangga", 'Pengumuman', 'Pendataan dilakukan untuk memperkuat pelaku UMKM dan program pemberdayaan ekonomi desa.'],
+            ['Sertifikasi Pembangunan Jalan Lingkungan', 'Pembangunan', 'Kegiatan sertifikasi memastikan volume dan mutu pekerjaan sesuai rencana anggaran.'],
+            ['BUMDes Menyiapkan Layanan Usaha Bersama', 'BUMDes', 'BUMDes mengelola aset desa agar dapat dimanfaatkan masyarakat secara tertib.'],
+            ["BPS Mendampingi {$name} dalam Program Desa Cinta Statistik", 'Desa Cantik', 'Pendampingan memperkuat tata kelola data dan publikasi statistik desa.'],
+            ['Pemkab Ogan Ilir Mendorong Keterbukaan Informasi Publik Desa', 'Berita', 'Berita kabupaten yang dapat ditampilkan ulang di kanal informasi desa.'],
         ];
         $images = [
             'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80',
@@ -225,7 +213,7 @@ final class VillageProvisioner
             'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80',
         ];
 
-        foreach ($posts as $index => [$title, $category, $excerpt, $source]) {
+        foreach ($posts as $index => [$title, $category, $excerpt]) {
             $publishedAt = now()->subDays($index * 4);
 
             DB::table('posts')->insert([
@@ -237,7 +225,6 @@ final class VillageProvisioner
                 'excerpt' => $excerpt,
                 'body' => "<p>{$excerpt}</p><p>Konten awal ini dapat diedit melalui CMS {$name}.</p>",
                 'featured_image_url' => $images[$index],
-                'source_type' => $source,
                 'status' => 'published',
                 'published_at' => $publishedAt,
                 'view_count' => 30 + ($index * 11),

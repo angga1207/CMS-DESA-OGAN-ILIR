@@ -22,7 +22,6 @@ final class VillagePublicContentController extends Controller
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'category' => ['nullable', 'string', 'max:100'],
-            'source' => ['nullable', 'in:village,regency'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'between:6,24'],
         ]);
@@ -39,7 +38,6 @@ final class VillagePublicContentController extends Controller
                 ->where(fn ($builder) => $builder->whereNull('posts.published_at')->orWhere('posts.published_at', '<=', now()))
                 ->when($filters['q'] ?? null, fn ($builder, string $search) => $builder->where(fn ($nested) => $nested->whereLike('posts.title', "%{$search}%")->orWhereLike('posts.excerpt', "%{$search}%")))
                 ->when($filters['category'] ?? null, fn ($builder, string $category) => $builder->where('content_categories.slug', $category))
-                ->when($filters['source'] ?? null, fn ($builder, string $source) => $builder->where('posts.source_type', $source))
                 ->orderByDesc('posts.published_at')
                 ->select('posts.*', 'content_categories.name as category_name', 'content_categories.slug as category_slug');
 
@@ -61,7 +59,6 @@ final class VillagePublicContentController extends Controller
                         ->get(['name', 'slug'])
                         ->map(fn (object $category): array => (array) $category)
                         ->all(),
-                    'sources' => [['value' => 'village', 'label' => 'Desa'], ['value' => 'regency', 'label' => 'Kabupaten']],
                 ],
             ];
         }, ['seconds' => 30]);

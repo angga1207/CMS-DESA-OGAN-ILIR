@@ -13,6 +13,11 @@ use RuntimeException;
 
 final class SidesiClient
 {
+    public function skpd(): array
+    {
+        return $this->get('noc/get_skpd');
+    }
+
     public function facilityCategories(): array
     {
         return $this->get('listing/get_kategori_listing');

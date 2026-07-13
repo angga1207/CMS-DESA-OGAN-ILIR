@@ -38,7 +38,7 @@
 
                     <div class="space-y-4 p-5">
                         <h3 class="text-sm font-black uppercase tracking-[0.14em] text-zinc-500">Riwayat Rilis</h3>
-                        @forelse($application['releases'] ?? [] as $release)
+                        @forelse($releasePaginators[$type] as $release)
                             <article class="rounded-lg border border-zinc-200 p-4">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div>
@@ -66,6 +66,12 @@
                         @empty
                             <div class="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500">Belum ada riwayat rilis pada file JSON.</div>
                         @endforelse
+
+                        @if($releasePaginators[$type]->hasPages())
+                            <div class="border-t border-zinc-200 pt-4">
+                                {{ $releasePaginators[$type]->onEachSide(1)->links() }}
+                            </div>
+                        @endif
                     </div>
                 </section>
             @endforeach

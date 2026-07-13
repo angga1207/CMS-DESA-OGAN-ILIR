@@ -1,6 +1,6 @@
 @props(['rows' => [], 'columns' => [], 'table', 'form'])
 
-<div class="mt-8 overflow-hidden rounded-lg border border-zinc-200">
+<div class="admin-panel mt-8 overflow-hidden border bg-white">
     <table class="w-full text-left text-sm">
         <thead class="bg-zinc-100 text-xs uppercase text-zinc-500">
             <tr>
@@ -18,8 +18,8 @@
                     @endforeach
                     <td class="px-4 py-3">
                         <div class="flex gap-2">
-                            <button type="button" wire:click="edit('{{ $table }}', {{ $row['id'] }}, '{{ $form }}')" class="rounded bg-zinc-100 px-2 py-1 text-xs font-bold text-zinc-700">Edit</button>
-                            <button type="button" wire:click="delete('{{ $table }}', {{ $row['id'] }})" wire:confirm="Hapus data ini?" class="rounded bg-red-50 px-2 py-1 text-xs font-bold text-red-700">Hapus</button>
+                            <button type="button" wire:click="edit('{{ $table }}', {{ $row['id'] }}, '{{ $form }}')" class="inline-flex min-h-9 items-center gap-2 rounded bg-zinc-100 px-3 text-xs font-bold text-zinc-700"><i class="fa-solid fa-pen"></i>Edit</button>
+                            <button type="button" wire:click="delete('{{ $table }}', {{ $row['id'] }})" wire:confirm="Hapus data ini?" class="inline-flex min-h-9 items-center gap-2 rounded bg-red-50 px-3 text-xs font-bold text-red-700"><i class="fa-solid fa-trash"></i>Hapus</button>
                         </div>
                     </td>
                 </tr>

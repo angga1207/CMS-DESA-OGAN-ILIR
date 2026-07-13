@@ -164,7 +164,7 @@ new class extends Component {
                     carousel.</p>
             </div>
             <button type="button" wire:click="create"
-                class="inline-flex min-h-11 items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Tambah
+                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><i class="fa-solid fa-plus"></i>Tambah
                 Banner</button>
         </div>
 
@@ -198,10 +198,10 @@ new class extends Component {
                         <p class="mt-1 line-clamp-2 text-sm text-zinc-600">{{ $banner['subtitle'] }}</p>
                         <div class="mt-4 flex gap-2">
                             <button type="button" wire:click="edit({{ $banner['id'] }})"
-                                class="rounded bg-zinc-100 px-3 py-2 text-xs font-bold">Edit</button>
+                                class="inline-flex items-center gap-2 rounded bg-zinc-100 px-3 py-2 text-xs font-bold"><i class="fa-solid fa-pen"></i>Edit</button>
                             <button type="button" wire:click="delete({{ $banner['id'] }})"
                                 wire:confirm="Hapus banner ini?"
-                                class="rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700">Hapus</button>
+                                class="inline-flex items-center gap-2 rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700"><i class="fa-solid fa-trash"></i>Hapus</button>
                         </div>
                     </div>
                 </article>
@@ -241,7 +241,7 @@ new class extends Component {
                     <x-admin.select label="Status" model="form.is_active" :options="[1 => 'Aktif', 0 => 'Nonaktif']" />
                     <div class="sm:col-span-2 grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label class="text-sm font-bold">Gambar Landscape <span
+                            <label class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-image text-amber-600"></i>Gambar Landscape <span
                                     class="text-red-600">*</span></label>
                             <p class="mt-1 text-xs text-zinc-500">Desktop/tablet. Rekomendasi 1920×1080 px.</p>
                             <input type="file" wire:model="imageUpload" accept="image/*"
@@ -258,7 +258,7 @@ new class extends Component {
                             @endif
                         </div>
                         <div>
-                            <label class="text-sm font-bold">Gambar Portrait <span
+                            <label class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-mobile-screen text-amber-600"></i>Gambar Portrait <span
                                     class="font-normal text-zinc-500">(opsional)</span></label>
                             <p class="mt-1 text-xs text-zinc-500">Mobile. Rekomendasi 1080×1440 px.</p>
                             <input type="file" wire:model="portraitImageUpload" accept="image/*"
@@ -281,9 +281,9 @@ new class extends Component {
                     </div>
                     <div class="flex justify-end gap-2 border-t border-zinc-200 pt-5 sm:col-span-2">
                         <button type="button" wire:click="closeModal"
-                            class="inline-flex min-h-11 items-center rounded-md border border-zinc-300 px-4 text-sm font-bold">Batal</button>
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-bold"><i class="fa-solid fa-xmark"></i>Batal</button>
                         <button
-                            class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Simpan
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><i class="fa-solid fa-floppy-disk"></i>Simpan
                             Banner</button>
                     </div>
                 </form>

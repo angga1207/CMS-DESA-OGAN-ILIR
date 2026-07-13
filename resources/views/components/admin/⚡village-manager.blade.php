@@ -310,7 +310,7 @@ new class extends Component
                     dikelola.</p>
             </div>
             <button type="button" wire:click="create"
-                class="inline-flex min-h-11 items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Tambah Desa</button>
+                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><i class="fa-solid fa-plus"></i>Tambah Desa</button>
         </div>
 
         <div class="grid gap-3 border-b border-zinc-200 p-5 md:grid-cols-2 xl:grid-cols-6">
@@ -391,12 +391,12 @@ new class extends Component
                             <td class="px-5 py-4">
                                 <div class="flex flex-wrap gap-2">
                                     <button type="button" wire:click="selectVillage({{ $village['id'] }})"
-                                        class="rounded bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">Pilih</button>
+                                        class="inline-flex items-center gap-2 rounded bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700"><i class="fa-solid fa-location-dot"></i>Pilih</button>
                                     <button type="button" wire:click="edit({{ $village['id'] }})"
-                                        class="rounded bg-zinc-100 px-3 py-2 text-xs font-bold">Edit</button>
+                                        class="inline-flex items-center gap-2 rounded bg-zinc-100 px-3 py-2 text-xs font-bold"><i class="fa-solid fa-pen"></i>Edit</button>
                                     <button type="button" wire:click="delete({{ $village['id'] }})"
                                         wire:confirm="Hapus desa ini?"
-                                        class="rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700">Hapus</button>
+                                        class="inline-flex items-center gap-2 rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700"><i class="fa-solid fa-trash"></i>Hapus</button>
                                 </div>
                             </td>
                         </tr>
@@ -449,7 +449,7 @@ new class extends Component
                     </div>
                     <x-admin.input label="Koordinat" model="coordinates" placeholder="-3.238421, 104.715834" class="lg:col-span-2" />
                     <div class="lg:col-span-3">
-                        <label class="text-sm font-bold">Kunci Analytics</label>
+                        <label class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-key text-amber-600"></i>Kunci Analytics</label>
                         <div class="mt-1 flex gap-2">
                             <input type="text" wire:model="form.analytics_key" readonly class="min-w-0 flex-1 rounded-md border border-zinc-300 bg-zinc-100 px-3 py-2 font-mono text-xs text-zinc-600">
                             <button type="button" wire:click="regenerateAnalyticsKey" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-3 text-sm font-bold">
@@ -488,9 +488,9 @@ new class extends Component
 
                     <div class="flex justify-end gap-2 border-t border-zinc-200 pt-5 sm:col-span-2 lg:col-span-3">
                         <button type="button" wire:click="closeModal"
-                            class="inline-flex min-h-11 items-center rounded-md border border-zinc-300 px-4 text-sm font-bold">Batal</button>
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-bold"><i class="fa-solid fa-xmark"></i>Batal</button>
                         <button
-                            class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Simpan
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><i class="fa-solid fa-floppy-disk"></i>Simpan
                             Desa</button>
                     </div>
                 </form>

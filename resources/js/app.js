@@ -114,6 +114,71 @@ const initDashboardVisitorChart = () => {
     }).render();
 };
 
+const initVisitorStatisticsChart = () => {
+    const wrapper = document.querySelector('[data-visitor-statistics-chart-payload]');
+    const chartElement = document.querySelector('#visitorStatisticsChart');
+
+    if (!wrapper || !chartElement) {
+        return;
+    }
+
+    const payload = JSON.parse(wrapper.dataset.visitorStatisticsChartPayload || '{}');
+    const signature = JSON.stringify(payload);
+
+    if (chartElement.__visitorStatisticsSignature === signature) {
+        return;
+    }
+
+    if (chartElement.__visitorStatisticsChart) {
+        chartElement.__visitorStatisticsChart.destroy();
+    }
+
+    chartElement.__visitorStatisticsSignature = signature;
+
+    const chart = new ApexCharts(chartElement, {
+        chart: {
+            type: 'area',
+            height: 340,
+            fontFamily: 'Instrument Sans, sans-serif',
+            toolbar: { show: false },
+            zoom: { enabled: false },
+        },
+        series: [
+            { name: 'Total kunjungan', data: payload.visits || [] },
+            { name: 'Pengunjung unik', data: payload.unique || [] },
+        ],
+        colors: ['#047857', '#0ea5e9'],
+        stroke: { curve: 'smooth', width: [3, 2] },
+        fill: {
+            type: 'gradient',
+            gradient: { shadeIntensity: 0, opacityFrom: 0.26, opacityTo: 0.02, stops: [0, 90, 100] },
+        },
+        dataLabels: { enabled: false },
+        grid: { borderColor: '#f4f4f5', strokeDashArray: 4, padding: { left: 8, right: 12 } },
+        xaxis: {
+            categories: payload.labels || [],
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            labels: { rotate: -35, style: { colors: '#71717a', fontSize: '11px', fontWeight: 600 } },
+        },
+        yaxis: {
+            min: 0,
+            forceNiceScale: true,
+            labels: { formatter: (value) => Math.round(value), style: { colors: '#71717a', fontSize: '11px' } },
+        },
+        legend: { position: 'top', horizontalAlign: 'left', fontSize: '12px', fontWeight: 700, markers: { size: 5 } },
+        tooltip: {
+            shared: true,
+            intersect: false,
+            y: { formatter: (value) => new Intl.NumberFormat('id-ID').format(Math.round(value)) },
+        },
+        noData: { text: 'Belum ada data kunjungan' },
+    });
+
+    chartElement.__visitorStatisticsChart = chart;
+    chart.render();
+};
+
 const initMap = () => {
     const mapElement = document.querySelector('#villageMap');
     const wrapper = document.querySelector('[data-map-points]');
@@ -238,6 +303,44 @@ const initTomSelect = () => {
     });
 };
 
+const tomSelectModelName = (element) => Array.from(element.attributes)
+    .find((attribute) => attribute.name.startsWith('wire:model'))
+    ?.value;
+
+const normalizeTomSelectValue = (value, multiple = false) => {
+    if (multiple) {
+        return Array.isArray(value)
+            ? value.map((item) => String(item))
+            : [];
+    }
+
+    if (value === null || value === undefined) {
+        return '';
+    }
+
+    return String(value);
+};
+
+const syncTomSelect = (element) => {
+    if (!element.tomselect) {
+        return;
+    }
+
+    const componentId = element.closest('[wire\\:id]')?.getAttribute('wire:id');
+    const component = componentId && window.Livewire ? window.Livewire.find(componentId) : null;
+    const modelName = tomSelectModelName(element);
+    const modelValue = component && modelName && typeof component.get === 'function'
+        ? component.get(modelName)
+        : (element.multiple
+            ? Array.from(element.selectedOptions).map((option) => option.value)
+            : element.value);
+    const value = normalizeTomSelectValue(modelValue, element.multiple);
+
+    if (JSON.stringify(element.tomselect.getValue()) !== JSON.stringify(value)) {
+        element.tomselect.setValue(value, true);
+    }
+};
+
 let tomSelectObserver;
 
 const observeTomSelectElements = () => {
@@ -270,30 +373,35 @@ const observeTomSelectElements = () => {
     });
 };
 
+const applySweetAlertConfirmation = (element, message) => {
+    element.__livewire_confirm = (proceed, cancel) => {
+        window.Swal.fire({
+            title: 'Konfirmasi tindakan',
+            text: message || 'Lanjutkan tindakan ini?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, lanjutkan',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#52525b',
+            reverseButtons: true,
+            focusCancel: true,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                proceed();
+            } else {
+                cancel();
+            }
+        });
+    };
+};
+
 const initSweetAlertConfirmations = () => {
     document.querySelectorAll('[wire\\:confirm]').forEach((element) => {
-        const message = element.getAttribute('wire:confirm') || 'Lanjutkan tindakan ini?';
-
-        element.__livewire_confirm = (proceed, cancel) => {
-            window.Swal.fire({
-                title: 'Konfirmasi tindakan',
-                text: message,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, lanjutkan',
-                cancelButtonText: 'Batal',
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#52525b',
-                reverseButtons: true,
-                focusCancel: true,
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    proceed();
-                } else {
-                    cancel();
-                }
-            });
-        };
+        applySweetAlertConfirmation(
+            element,
+            element.getAttribute('wire:confirm')?.replaceAll('\\n', '\n'),
+        );
     });
 };
 
@@ -336,8 +444,21 @@ const canDropMenuItem = (container, item) => {
 
     const targetLevel = container.dataset.menuLevel || 'main';
     const itemLevel = item.dataset.menuLevel || 'main';
+    const targetParentId = container.dataset.parentId || '';
+    const itemId = item.dataset.menuItemId || '';
 
-    return targetLevel === itemLevel;
+    if (targetLevel === itemLevel) {
+        return true;
+    }
+
+    if (itemLevel === 'submenu' && targetLevel === 'main') {
+        return true;
+    }
+
+    return itemLevel === 'main'
+        && targetLevel === 'submenu'
+        && targetParentId !== itemId
+        && !item.contains(container);
 };
 
 const initMenuSortables = () => {
@@ -423,17 +544,30 @@ const widgetDragAfterElement = (container, y) => {
     }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
 };
 
-const syncWidgetOrder = (container) => {
+const syncWidgetOrder = (container, movedItem = null) => {
     const componentId = container.closest('[wire\\:id]')?.getAttribute('wire:id');
     const component = componentId && window.Livewire ? window.Livewire.find(componentId) : null;
     const orderedIds = widgetSortableItems(container).map((item) => Number(item.dataset.widgetItemId)).filter(Boolean);
     const placement = container.dataset.widgetPlacement || '';
+    const movedId = movedItem?.dataset.widgetItemId ? Number(movedItem.dataset.widgetItemId) : null;
+    const sourcePlacement = movedItem?.dataset.widgetSourcePlacement || null;
 
     if (!component || !placement || orderedIds.length < 1) {
         return;
     }
 
-    component.call('reorderWidgets', placement, orderedIds);
+    component.call('reorderWidgets', placement, orderedIds, movedId, sourcePlacement);
+};
+
+const canDropWidget = (container, item) => {
+    if (!item) {
+        return false;
+    }
+
+    const placement = container.dataset.widgetPlacement || '';
+    const allowedPlacements = JSON.parse(item.dataset.widgetPlacements || '[]');
+
+    return allowedPlacements.includes(placement);
 };
 
 const initWidgetSortables = () => {
@@ -452,6 +586,7 @@ const initWidgetSortables = () => {
             }
 
             item.dataset.dragging = 'true';
+            item.dataset.widgetSourcePlacement = item.dataset.widgetPlacement || '';
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData('text/plain', item.dataset.widgetItemId);
         });
@@ -461,18 +596,20 @@ const initWidgetSortables = () => {
 
             if (item) {
                 delete item.dataset.dragging;
+                delete item.dataset.widgetSourcePlacement;
             }
         });
 
         container.addEventListener('dragover', (event) => {
-            const draggingItem = container.querySelector(':scope > [data-dragging="true"]');
+            const draggingItem = document.querySelector('[data-widget-item-id][data-dragging="true"]');
 
-            if (!draggingItem) {
+            if (!canDropWidget(container, draggingItem)) {
                 return;
             }
 
             event.preventDefault();
             event.stopPropagation();
+            container.dataset.dragOver = 'true';
 
             const afterElement = widgetDragAfterElement(container, event.clientY);
 
@@ -483,17 +620,27 @@ const initWidgetSortables = () => {
             }
         });
 
-        container.addEventListener('drop', (event) => {
-            const draggingItem = container.querySelector(':scope > [data-dragging="true"]');
+        container.addEventListener('dragleave', (event) => {
+            if (!container.contains(event.relatedTarget)) {
+                delete container.dataset.dragOver;
+            }
+        });
 
-            if (!draggingItem) {
+        container.addEventListener('drop', (event) => {
+            const draggingItem = document.querySelector('[data-widget-item-id][data-dragging="true"]');
+
+            if (!canDropWidget(container, draggingItem)) {
                 return;
             }
 
             event.preventDefault();
             event.stopPropagation();
+            delete container.dataset.dragOver;
             delete draggingItem.dataset.dragging;
-            syncWidgetOrder(container);
+            container.querySelector('[data-widget-empty]')?.remove();
+            draggingItem.dataset.widgetPlacement = container.dataset.widgetPlacement || '';
+            syncWidgetOrder(container, draggingItem);
+            delete draggingItem.dataset.widgetSourcePlacement;
         });
     });
 };
@@ -613,6 +760,7 @@ const initQuillEditors = () => {
             },
             placeholder: 'Tulis konten di sini...',
         });
+        editorElement.quill = quill;
 
         const sync = () => {
             if (componentId && livewireModel && window.Livewire) {
@@ -627,6 +775,19 @@ const initQuillEditors = () => {
         }
     });
 };
+
+document.addEventListener('article-body-restored', (event) => {
+    document.querySelectorAll('.quill-editor').forEach((editorElement) => {
+        const quill = editorElement.quill;
+
+        if (!quill) {
+            return;
+        }
+
+        const nextBody = event.detail?.body ?? '';
+        quill.clipboard.dangerouslyPasteHTML(nextBody, 'api');
+    });
+});
 
 const styleQuillEditors = () => {
     document.querySelectorAll('.ql-container').forEach((container) => {
@@ -646,6 +807,7 @@ const initRichTextEditors = () => {
 const boot = () => {
     initCharts();
     initDashboardVisitorChart();
+    initVisitorStatisticsChart();
     initMap();
     initCarousel();
     initLightbox();
@@ -660,23 +822,32 @@ const boot = () => {
 document.addEventListener('DOMContentLoaded', boot);
 document.addEventListener('livewire:navigated', boot);
 document.addEventListener('livewire:init', () => {
+    let morphRefreshQueued = false;
+
+    window.Livewire.hook('directive.init', ({ el, directive }) => {
+        if (directive.value !== 'confirm' || directive.modifiers.includes('prompt')) {
+            return;
+        }
+
+        applySweetAlertConfirmation(
+            el,
+            directive.expression?.replaceAll('\\n', '\n'),
+        );
+    });
+
     window.Livewire.hook('morph.updated', () => {
-        document.querySelectorAll('select:not([data-native-select])').forEach((element) => {
-            if (!element.tomselect) {
-                return;
-            }
+        if (morphRefreshQueued) {
+            return;
+        }
 
-            const value = element.multiple
-                ? Array.from(element.selectedOptions).map((option) => option.value)
-                : element.value;
-
-            if (JSON.stringify(element.tomselect.getValue()) !== JSON.stringify(value)) {
-                element.tomselect.setValue(value, true);
-            }
+        morphRefreshQueued = true;
+        queueMicrotask(() => {
+            morphRefreshQueued = false;
+            initTomSelect();
+            document.querySelectorAll('select:not([data-native-select])').forEach(syncTomSelect);
+            initMenuSortables();
+            initWidgetSortables();
+            initVisitorStatisticsChart();
         });
-
-        queueMicrotask(initTomSelect);
-        queueMicrotask(initMenuSortables);
-        queueMicrotask(initWidgetSortables);
     });
 });

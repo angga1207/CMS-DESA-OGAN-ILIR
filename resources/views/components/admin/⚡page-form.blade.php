@@ -73,14 +73,18 @@ new class extends Component {
 };
 ?>
 
-<form wire:submit="save" class="grid gap-6 xl:grid-cols-[1fr_360px]">
-    <section class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-        <div class="">
+<form wire:submit="save" class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+    <section class="admin-panel border bg-white p-5">
+        <div class="mb-5 border-b border-emerald-950/10 pb-4">
+            <h2 class="flex items-center gap-2 font-black text-emerald-950"><i class="fa-solid fa-file-pen text-amber-600"></i>Konten Halaman</h2>
+            <p class="mt-1 text-sm text-zinc-500">Susun halaman statis untuk profil, layanan, dan informasi desa.</p>
+        </div>
+        <div class="space-y-4">
             <x-admin.input label="Judul" model="form.title" />
             <x-admin.textarea label="Ringkasan" model="form.excerpt" class="sm:col-span-2" />
             <div class="sm:col-span-2">
-                <label class="text-sm font-bold">Konten</label>
-                <div wire:ignore class="mt-1 rounded-md border border-zinc-300 bg-white">
+                <label class="admin-field-label">Konten</label>
+                <div wire:ignore class="mt-1 overflow-hidden rounded-xl border border-emerald-950/15 bg-white">
                     <div data-livewire-model="form.body" class="quill-editor">{!! $form['body'] !!}</div>
                 </div>
                 @error('form.body')
@@ -90,13 +94,17 @@ new class extends Component {
         </div>
     </section>
     <aside class="space-y-4">
-        <section class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+        <section class="admin-panel border bg-white p-5">
+            <div class="mb-4 border-b border-emerald-950/10 pb-4">
+                <h3 class="flex items-center gap-2 font-black text-emerald-950"><i class="fa-solid fa-sliders text-amber-600"></i>Publikasi</h3>
+                <p class="mt-1 text-sm text-zinc-500">Atur status dan gambar hero halaman.</p>
+            </div>
             <x-admin.select label="Status" model="form.status" :options="['published' => 'Terbit', 'draft' => 'Draf']" />
             <div class="mt-4">
-                <label class="text-sm font-bold">Gambar Hero</label>
+                <label class="admin-field-label">Gambar Hero</label>
                 <p class="mt-1 text-xs text-zinc-500">Otomatis diperkecil dan dikompresi ke WebP.</p>
                 <input type="file" wire:model="thumbnailUpload" accept="image/*"
-                    class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                    class="admin-control mt-1">
                 @error('thumbnailUpload')
                     <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                 @enderror
@@ -104,17 +112,17 @@ new class extends Component {
                 </div>
                 @if ($thumbnailUpload)
                     <img src="{{ $thumbnailUpload->temporaryUrl() }}" alt="Preview hero"
-                        class="mt-3 h-36 w-full rounded-md object-cover">
+                        class="mt-3 h-40 w-full rounded-xl border border-emerald-950/10 object-cover">
                 @elseif($form['featured_image_url'])
                     <img src="{{ $form['featured_image_url'] }}" alt="Gambar hero saat ini"
-                        class="mt-3 h-36 w-full rounded-md object-cover">
+                        class="mt-3 h-40 w-full rounded-xl border border-emerald-950/10 object-cover">
                 @endif
             </div>
             <div class="mt-5 flex gap-2">
                 <button
-                    class="inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Simpan</button>
+                    class="admin-btn-primary inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md px-4 text-sm font-black text-white"><i class="fa-solid fa-floppy-disk"></i>Simpan</button>
                 <a href="{{ route('admin.pages.index') }}"
-                    class="inline-flex min-h-11 items-center rounded-md border border-zinc-300 px-4 text-sm font-bold">Batal</a>
+                    class="inline-flex min-h-11 items-center gap-2 rounded-md border border-emerald-950/15 px-4 text-sm font-bold text-zinc-700"><i class="fa-solid fa-arrow-left"></i>Batal</a>
             </div>
         </section>
     </aside>

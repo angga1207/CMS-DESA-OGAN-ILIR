@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\PublicVillageSite;
+use App\Support\ApplicationVersions;
 use App\Support\PublicSiteCache;
 use App\Support\VillageFeatures;
 use App\Support\WidgetCatalog;
+use Database\Seeders\OganIlirVillagesFromSidesiSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -32,6 +34,7 @@ class ExampleTest extends TestCase
     {
         $this->assertSame('id', config('app.locale'));
         $this->assertTrue(config('livewire-alert.toast'));
+        $this->assertSame(4, config('captcha.flat.length'));
         $this->assertTrue(Schema::hasColumns('villages', ['logo_url', 'favicon_url', 'website_url', 'api_endpoint_url', 'sidesi_village_id', 'analytics_key']));
         $this->assertTrue(Schema::hasColumn('hero_banners', 'portrait_image_url'));
         $this->assertFalse(Schema::hasTable('map_categories'));
@@ -50,9 +53,12 @@ class ExampleTest extends TestCase
         $this->assertFalse(Schema::hasTable('podes_snapshots'));
         $this->assertFalse(Schema::hasTable('podes_sections'));
         $this->assertFalse(Schema::hasTable('podes_items'));
+        $this->assertFalse(Schema::hasTable('content_sources'));
+        $this->assertFalse(Schema::hasColumn('posts', 'source_type'));
         $this->assertTrue(Schema::hasTable('village_features'));
         $this->assertTrue(Schema::hasTable('village_visitor_daily_stats'));
         $this->assertTrue(Schema::hasTable('village_widgets'));
+        $this->assertTrue(Schema::hasTable('post_revisions'));
         $this->assertTrue(Schema::hasTable('business_photos'));
         $this->assertTrue(Schema::hasTable('bumdes'));
         $this->assertTrue(Schema::hasTable('bumdes_categories'));
@@ -73,6 +79,18 @@ class ExampleTest extends TestCase
             ->assertSee('images/cms/ogan-ilir-logo.gif')
             ->assertSee('Masuk CMS Desa')
             ->assertSee('Masuk Panel Admin');
+    }
+
+    public function test_login_resets_captcha_input_when_captcha_is_wrong(): void
+    {
+        Livewire::test('auth.login')
+            ->set('username', 'developer')
+            ->set('password', 'password')
+            ->set('captcha', 'SALAH')
+            ->call('login')
+            ->assertHasErrors(['captcha'])
+            ->assertSet('captcha', '')
+            ->assertSet('captchaVersion', 2);
     }
 
     public function test_authenticated_root_redirects_to_admin_dashboard(): void
@@ -181,8 +199,10 @@ class ExampleTest extends TestCase
         $this->seed();
 
         $admin = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->where('name', 'Desa Tanjung Lubuk')->value('id');
 
         $this->assertNull($admin->village_id);
+        $this->withSession(['active_village_id' => $villageId]);
 
         $this->actingAs($admin)->get('/admin/pages')
             ->assertStatus(200)
@@ -216,7 +236,8 @@ class ExampleTest extends TestCase
             ->assertStatus(200)
             ->assertSee('Galeri')
             ->assertSee('Album Galeri')
-            ->assertSee('Upload Foto');
+            ->assertSee('Upload Foto')
+            ->assertSee('Tambah Video');
 
         $this->actingAs($admin)->get('/admin/banners')
             ->assertStatus(200)
@@ -241,6 +262,13 @@ class ExampleTest extends TestCase
             ->assertSee('Modern Style 1')
             ->assertSee('Modern Style 2')
             ->assertSee('Smooth Dynamic Style')
+            ->assertSee('Preview Frontend')
+            ->assertSee('about:blank')
+            ->assertDontSee('Label & Link di Bawah Banner', false);
+
+        $this->actingAs($admin)->get('/admin/home-shortcuts')
+            ->assertStatus(200)
+            ->assertSee('Shortcut Beranda')
             ->assertSee('Label & Link di Bawah Banner', false);
 
         $this->actingAs($admin)->get('/admin/users')
@@ -291,9 +319,11 @@ class ExampleTest extends TestCase
         $this->assertNull(WidgetCatalog::get('emergency_contact'));
     }
 
-    public function test_admin_can_update_public_theme_and_home_shortcuts(): void
+    public function test_admin_can_update_public_theme(): void
     {
         $this->seed();
+        $villageId = (int) DB::table('villages')->orderBy('id')->value('id');
+        $this->withSession(['active_village_id' => $villageId]);
         $this->actingAs(User::query()->where('username', 'developer')->first());
 
         Livewire::test('admin.styling-manager')
@@ -302,16 +332,28 @@ class ExampleTest extends TestCase
             ->set('settings.theme_secondary', '#234567')
             ->set('settings.theme_tertiary', '#abcdef')
             ->set('settings.font_style', 'elegant')
-            ->set('settings.home_shortcuts_enabled', false)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'theme_primary', 'value' => '#123456']);
+        $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'site_theme', 'value' => 'smooth-dynamic-style']);
+        $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'font_style', 'value' => 'elegant']);
+    }
+
+    public function test_admin_can_update_home_shortcuts_from_separate_module(): void
+    {
+        $this->seed();
+        $villageId = (int) DB::table('villages')->orderBy('id')->value('id');
+        $this->withSession(['active_village_id' => $villageId]);
+        $this->actingAs(User::query()->where('username', 'developer')->first());
+
+        Livewire::test('admin.home-shortcut-manager')
+            ->set('enabled', false)
             ->set('shortcutLinks.0.label', 'Tentang Desa')
             ->set('shortcutLinks.0.url', '/tentang')
             ->call('save')
             ->assertHasNoErrors();
 
-        $villageId = (int) DB::table('villages')->value('id');
-        $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'theme_primary', 'value' => '#123456']);
-        $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'site_theme', 'value' => 'smooth-dynamic-style']);
-        $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'font_style', 'value' => 'elegant']);
         $this->assertDatabaseHas('site_settings', ['village_id' => $villageId, 'key' => 'home_shortcuts_enabled', 'value' => '0', 'type' => 'boolean']);
         $shortcuts = json_decode((string) DB::table('site_settings')->where('village_id', $villageId)->where('key', 'home_shortcuts')->value('value'), true);
         $this->assertSame('Tentang Desa', $shortcuts[0]['label']);
@@ -345,6 +387,13 @@ class ExampleTest extends TestCase
             ->assertSet('settings.theme_surface', '#f4f1ea')
             ->assertSet('settings.theme_text', '#151515')
             ->assertSet('settings.font_style', 'elegant')
+            ->set('settings.site_theme', 'cartoon')
+            ->assertSet('settings.theme_primary', '#f97316')
+            ->assertSet('settings.theme_secondary', '#1d4ed8')
+            ->assertSet('settings.theme_tertiary', '#38bdf8')
+            ->assertSet('settings.theme_surface', '#fff7ed')
+            ->assertSet('settings.theme_text', '#1f2937')
+            ->assertSet('settings.font_style', 'cartoon')
             ->set('settings.site_theme', 'modern-style-1')
             ->assertSet('settings.theme_primary', '#8f1d2c')
             ->assertSet('settings.theme_secondary', '#102f28')
@@ -358,7 +407,7 @@ class ExampleTest extends TestCase
     {
         $this->seed();
 
-        $villageId = DB::table('villages')->value('id');
+        $villageId = CurrentVillage::id();
         $adminDesa = User::query()->create([
             'village_id' => $villageId,
             'name' => 'Admin Desa',
@@ -397,6 +446,101 @@ class ExampleTest extends TestCase
         $this->assertSame('editortanjunglubuk', $editor->username);
         $this->assertTrue(Hash::check('D3saOganIliR_@', $admin->password));
         $this->assertTrue(Hash::check('D3saOganIliR_@', $editor->password));
+    }
+
+    public function test_ogan_ilir_villages_can_be_seeded_from_sidesi_skpd_endpoint(): void
+    {
+        config(['services.sidesi.app_key' => 'testing-key']);
+
+        Http::fake([
+            'https://sidesi.oganilirkab.go.id/api/v1/noc/get_skpd' => Http::response([
+                'statusCode' => 200,
+                'message' => 'List SKPD',
+                'data' => [
+                    [
+                        'id_skpd' => '8',
+                        'nama_skpd' => 'KECAMATAN INDRALAYA SELATAN',
+                        'jenis_skpd' => 'kecamatan',
+                        'id_kecamatan' => '161008',
+                    ],
+                    [
+                        'id_skpd' => '100',
+                        'nama_skpd' => 'DESA TANJUNG LUBUK',
+                        'jenis_skpd' => 'desa',
+                        'id_skpd_induk' => '8',
+                        'id_desa' => '1610082002',
+                        'id_kecamatan' => '161008',
+                        'telepon_skpd' => '0711-123456',
+                        'email_skpd' => 'pemdes.tanjunglubuk@example.test',
+                        'alamat_skpd' => 'Kantor Desa Tanjung Lubuk',
+                        'website' => 'tanjunglubuk.oganilirkab.go.id',
+                        'latitude' => '-3.295384',
+                        'longitude' => '104.674993',
+                    ],
+                    [
+                        'id_skpd' => '101',
+                        'nama_skpd' => 'DESA MERANJAT ILIR',
+                        'jenis_skpd' => 'desa',
+                        'id_skpd_induk' => '8',
+                        'id_desa' => '1610082003',
+                        'id_kecamatan' => '161008',
+                        'telepon_skpd' => '-',
+                        'email_skpd' => '-',
+                        'alamat_skpd' => '-',
+                        'website' => '-',
+                        'latitude' => '-3.287',
+                        'longitude' => '104.689',
+                    ],
+                    [
+                        'id_skpd' => '102',
+                        'nama_skpd' => 'KELURAHAN TIMBANGAN',
+                        'jenis_skpd' => 'kelurahan',
+                        'id_desa' => '1610081001',
+                    ],
+                ],
+            ]),
+        ]);
+
+        DB::table('villages')->insert([
+            'name' => 'Nama Lama',
+            'slug' => 'desa-tanjung-lubuk',
+            'district' => 'Lama',
+            'regency' => 'Ogan Ilir',
+            'province' => 'Sumatera Selatan',
+            'sidesi_village_id' => '1610082002',
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $this->seed(OganIlirVillagesFromSidesiSeeder::class);
+        $this->seed(OganIlirVillagesFromSidesiSeeder::class);
+
+        Http::assertSentCount(2);
+        $this->assertSame(2, DB::table('villages')->count());
+
+        $this->assertDatabaseHas('villages', [
+            'sidesi_village_id' => '1610082002',
+            'name' => 'Desa Tanjung Lubuk',
+            'slug' => 'desa-tanjung-lubuk',
+            'district' => 'Indralaya Selatan',
+            'phone' => '0711-123456',
+            'email' => 'pemdes.tanjunglubuk@example.test',
+            'website_url' => 'https://tanjunglubuk.oganilirkab.go.id',
+        ]);
+        $this->assertDatabaseHas('villages', [
+            'sidesi_village_id' => '1610082003',
+            'name' => 'Desa Meranjat Ilir',
+            'slug' => 'desa-meranjat-ilir',
+            'district' => 'Indralaya Selatan',
+            'email' => null,
+            'website_url' => null,
+        ]);
+        $this->assertDatabaseMissing('villages', ['sidesi_village_id' => '1610081001']);
+        $this->assertNotNull(DB::table('villages')->where('sidesi_village_id', '1610082003')->value('analytics_key'));
+        $this->assertSame(2, DB::table('navigation_menus')->count());
+        $this->assertSame(2, DB::table('users')->where('role', 'admin_desa')->count());
+        $this->assertSame(2, DB::table('users')->where('role', 'editor')->count());
+        $this->assertSame(4, DB::table('hero_banners')->count());
     }
 
     public function test_user_manager_requires_matching_password_confirmation(): void
@@ -485,12 +629,19 @@ class ExampleTest extends TestCase
             ->assertSee('Frontend Publik')
             ->assertSee('cms-backend.json')
             ->assertSee('public-frontend.json')
-            ->assertSee('v1.4.1')
-            ->assertSee('v1.4.0')
-            ->assertSee('v1.0.0')
+            ->assertSee('v1.6.4')
+            ->assertSee('backend_page=2', false)
+            ->assertSee('frontend_page=2', false)
+            ->assertDontSee('v1.4.1')
             ->assertDontSee('Tambah Versi')
             ->assertDontSee('Simpan Versi')
             ->assertDontSee('Hapus Versi');
+
+        $this->actingAs($developer)
+            ->get('/admin/application-versions?backend_page=2')
+            ->assertOk()
+            ->assertSee('v1.4.1')
+            ->assertSee('v1.6.4');
     }
 
     public function test_authenticated_user_can_update_profile_and_change_password(): void
@@ -606,7 +757,6 @@ class ExampleTest extends TestCase
         foreach ([
             'hero_banners',
             'content_categories',
-            'content_sources',
             'posts',
             'business_categories',
             'businesses',
@@ -616,6 +766,7 @@ class ExampleTest extends TestCase
             'bumdes_photos',
             'gallery_albums',
             'gallery_photos',
+            'gallery_videos',
             'videos',
             'downloadable_files',
             'development_projects',
@@ -803,6 +954,69 @@ class ExampleTest extends TestCase
             ->assertSee('Thumbnail', false);
     }
 
+    public function test_admin_map_module_displays_sidesi_data_in_paginated_table(): void
+    {
+        $this->seed();
+        config(['services.sidesi.app_key' => 'testing-key']);
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $village = DB::table('villages')->first();
+        DB::table('villages')->where('id', $village->id)->update([
+            'sidesi_village_id' => '1610022013',
+        ]);
+
+        $facilityRows = collect(range(1, 11))->map(fn (int $index): array => [
+            'id_listing' => $index,
+            'nama_listing' => $index === 11 ? 'Puskesmas Pembantu' : ($index === 1 ? 'Kantor Desa Induk' : "Kantor Desa Ke-{$index}"),
+            'nama_kategori_listing' => 'Kantor Pemerintahan',
+            'nama_pengelola' => 'Pemdes',
+            'telepon' => '08123456789',
+            'email' => 'desa@example.test',
+            'alamat' => "Dusun {$index}",
+            'latitude' => '-3.295384',
+            'longitude' => '104.674993',
+            'status' => 'Aktif',
+        ])->all();
+
+        Http::fake([
+            '*/listing/get_kategori_listing' => Http::response(['data' => [
+                ['id_kategori_listing' => 7, 'nama_kategori_listing' => 'Kantor Pemerintahan'],
+            ]]),
+            '*/rtangga_miskin/get_bantuan' => Http::response(['data' => [
+                ['id_bantuan' => 1, 'nama_bantuan' => 'PKH'],
+            ]]),
+            '*/listing/get_listing*' => Http::response(['data' => $facilityRows]),
+            '*/rtangga_miskin/bantuan_keluarga*' => Http::response(['data' => [
+                [
+                    'id_kartu_keluarga' => 99,
+                    'nama_kepala_keluarga' => 'Keluarga Penerima',
+                    'name_bantuan' => ['PKH'],
+                    'desa' => 'Tanjung Lubuk',
+                    'kecamatan' => 'Indralaya',
+                    'alamat' => 'Dusun Bantuan',
+                    'no_rt' => '001',
+                    'no_rw' => '002',
+                ],
+            ]]),
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test('admin.sidesi-map-integration')
+            ->assertSee('Data Peta Sebaran')
+            ->assertSee('Kantor Pemerintahan')
+            ->assertSee('Kantor Desa Induk')
+            ->assertDontSee('Puskesmas Pembantu')
+            ->call('nextPage')
+            ->assertSee('Puskesmas Pembantu')
+            ->set('search', 'Puskesmas')
+            ->assertSee('Puskesmas Pembantu')
+            ->assertDontSee('Kantor Desa Induk')
+            ->set('kind', 'assistance')
+            ->assertSee('Keluarga Penerima')
+            ->assertSee('PKH');
+    }
+
     public function test_admin_content_lists_can_be_searched(): void
     {
         $this->seed();
@@ -951,6 +1165,63 @@ class ExampleTest extends TestCase
         ]);
     }
 
+    public function test_article_revisions_keep_only_three_latest_versions_and_can_be_restored(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $post = DB::table('posts')->orderBy('id')->first();
+        $this->actingAs($admin);
+
+        foreach (range(1, 4) as $version) {
+            Livewire::test('admin.post-form', ['id' => $post->id])
+                ->set('form.title', "Artikel Revisi {$version}")
+                ->set('form.excerpt', "Ringkasan revisi {$version}")
+                ->set('form.body', "<p>Konten revisi {$version}</p>")
+                ->set('form.published_at', now()->format('Y-m-d\TH:i'))
+                ->call('save')
+                ->assertHasNoErrors();
+        }
+
+        $revisions = DB::table('post_revisions')
+            ->where('post_id', $post->id)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->pluck('title')
+            ->all();
+
+        $this->assertCount(3, $revisions);
+        $this->assertSame(['Artikel Revisi 3', 'Artikel Revisi 2', 'Artikel Revisi 1'], $revisions);
+        $this->assertDatabaseMissing('post_revisions', [
+            'post_id' => $post->id,
+            'title' => $post->title,
+        ]);
+
+        $revisionId = (int) DB::table('post_revisions')
+            ->where('post_id', $post->id)
+            ->where('title', 'Artikel Revisi 2')
+            ->value('id');
+
+        Livewire::test('admin.post-form', ['id' => $post->id])
+            ->call('previewRevision', $revisionId)
+            ->assertSet('revisionPreview.title', 'Artikel Revisi 2')
+            ->assertSee('Preview Revisi')
+            ->assertSee('Pulihkan Revisi Ini')
+            ->call('restorePreviewedRevision')
+            ->assertHasNoErrors()
+            ->assertSet('form.title', 'Artikel Revisi 2')
+            ->assertSet('form.body', '<p>Konten revisi 2</p>')
+            ->assertSet('revisionPreview', null);
+
+        $this->assertDatabaseHas('posts', [
+            'id' => $post->id,
+            'title' => 'Artikel Revisi 2',
+            'excerpt' => 'Ringkasan revisi 2',
+        ]);
+
+        $this->assertSame(3, DB::table('post_revisions')->where('post_id', $post->id)->count());
+    }
+
     public function test_admin_can_edit_dynamic_menu_without_creating_duplicate(): void
     {
         $this->seed();
@@ -985,9 +1256,10 @@ class ExampleTest extends TestCase
         $this->seed();
 
         $admin = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->orderBy('id')->value('id');
+        $this->withSession(['active_village_id' => $villageId]);
         $this->actingAs($admin);
 
-        $villageId = DB::table('villages')->value('id');
         $menuId = DB::table('navigation_menus')->where('village_id', $villageId)->where('location', 'public')->value('id');
         $menuIds = DB::table('navigation_items')
             ->where('village_id', $villageId)
@@ -1023,9 +1295,10 @@ class ExampleTest extends TestCase
         $this->seed();
 
         $admin = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->orderBy('id')->value('id');
+        $this->withSession(['active_village_id' => $villageId]);
         $this->actingAs($admin);
 
-        $villageId = DB::table('villages')->value('id');
         $menuId = DB::table('navigation_menus')->where('village_id', $villageId)->where('location', 'public')->value('id');
         $submenu = DB::table('navigation_items')
             ->where('village_id', $villageId)
@@ -1053,14 +1326,125 @@ class ExampleTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_promote_submenu_to_root_menu_with_drag_and_drop_action(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->orderBy('id')->value('id');
+        $this->withSession(['active_village_id' => $villageId]);
+        $this->actingAs($admin);
+
+        $menuId = (int) DB::table('navigation_menus')
+            ->where('village_id', $villageId)
+            ->where('location', 'public')
+            ->value('id');
+        $submenu = DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->where('menu_id', $menuId)
+            ->whereNotNull('parent_id')
+            ->where('label', 'Layanan Administrasi')
+            ->first();
+        $rootIds = DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->where('menu_id', $menuId)
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $this->assertNotNull($submenu);
+
+        Livewire::test('admin.menu-manager')
+            ->call(
+                'reorderMenus',
+                null,
+                [(int) $submenu->id, ...$rootIds],
+                (int) $submenu->id,
+                (int) $submenu->parent_id,
+            )
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('navigation_items', [
+            'id' => $submenu->id,
+            'parent_id' => null,
+            'sort_order' => 1,
+        ]);
+    }
+
+    public function test_admin_can_move_root_menu_to_another_parent_and_flatten_its_submenus(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->orderBy('id')->value('id');
+        $this->withSession(['active_village_id' => $villageId]);
+        $this->actingAs($admin);
+
+        $menuId = (int) DB::table('navigation_menus')
+            ->where('village_id', $villageId)
+            ->where('location', 'public')
+            ->value('id');
+        $sourceId = (int) DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->where('menu_id', $menuId)
+            ->whereNull('parent_id')
+            ->where('label', 'Profil')
+            ->value('id');
+        $childId = (int) DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->where('menu_id', $menuId)
+            ->where('parent_id', $sourceId)
+            ->where('label', 'Layanan Administrasi')
+            ->value('id');
+        $secondChildId = (int) DB::table('navigation_items')->insertGetId([
+            'village_id' => $villageId,
+            'menu_id' => $menuId,
+            'parent_id' => $sourceId,
+            'label' => 'Kontak Desa',
+            'type' => 'url',
+            'url' => '/kontak',
+            'sort_order' => 2,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $targetParentId = (int) DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->where('menu_id', $menuId)
+            ->whereNull('parent_id')
+            ->where('label', 'Berita')
+            ->value('id');
+
+        Livewire::test('admin.menu-manager')
+            ->call('reorderMenus', $targetParentId, [$sourceId], $sourceId, null)
+            ->assertHasNoErrors();
+
+        $targetChildren = DB::table('navigation_items')
+            ->where('village_id', $villageId)
+            ->where('menu_id', $menuId)
+            ->where('parent_id', $targetParentId)
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $this->assertSame([$sourceId, $childId, $secondChildId], $targetChildren);
+        $this->assertDatabaseMissing('navigation_items', [
+            'parent_id' => $sourceId,
+        ]);
+    }
+
     public function test_admin_can_create_submenu_from_parent_drop_zone(): void
     {
         $this->seed();
 
         $admin = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->orderBy('id')->value('id');
+        $this->withSession(['active_village_id' => $villageId]);
         $this->actingAs($admin);
 
-        $villageId = DB::table('villages')->value('id');
         $parent = DB::table('navigation_items')
             ->where('village_id', $villageId)
             ->whereNull('parent_id')
@@ -1104,6 +1488,8 @@ class ExampleTest extends TestCase
         $this->actingAs($editor)->get('/admin/module/menus')->assertOk();
         $this->actingAs($editor)->get('/admin/module/files')->assertOk();
         $this->actingAs($editor)->get('/admin/references/content-categories')->assertOk();
+        $this->actingAs($editor)->get('/admin/references/business-categories')->assertOk();
+        $this->actingAs($editor)->get('/admin/references/bumdes-categories')->assertOk();
 
         foreach (['businesses', 'bumdes', 'projects', 'officials', 'maps', 'budgets', 'demographics'] as $module) {
             $this->actingAs($editor)->get("/admin/module/{$module}")->assertOk();
@@ -1123,15 +1509,53 @@ class ExampleTest extends TestCase
 
         $admin = User::query()->where('username', 'developer')->first();
 
-        foreach (['content-categories', 'content-sources'] as $reference) {
+        foreach ([
+            'content-categories' => 'Kategori Berita',
+            'business-categories' => 'Kategori UMKM',
+            'bumdes-categories' => 'Kategori BUMDES',
+        ] as $reference => $title) {
             $this->actingAs($admin)->get("/admin/references/{$reference}")
                 ->assertStatus(200)
+                ->assertSee($title)
                 ->assertSee('Tambah Referensi');
         }
 
+        $this->actingAs($admin)->get('/admin/references/content-sources')->assertNotFound();
         $this->actingAs($admin)->get('/admin/references/map-categories')->assertNotFound();
         $this->actingAs($admin)->get('/admin/references/budget-types')->assertNotFound();
         $this->actingAs($admin)->get('/admin/references/demographic-types')->assertNotFound();
+    }
+
+    public function test_admin_can_manage_business_and_bumdes_reference_categories(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $this->actingAs($admin);
+
+        Livewire::test('admin.reference-manager', ['reference' => 'business-categories'])
+            ->call('create')
+            ->set('form.name', 'Kerajinan Desa')
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSet('showModal', false);
+
+        Livewire::test('admin.reference-manager', ['reference' => 'bumdes-categories'])
+            ->call('create')
+            ->set('form.name', 'Unit Simpan Pinjam')
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSet('showModal', false);
+
+        $this->assertDatabaseHas('business_categories', [
+            'name' => 'Kerajinan Desa',
+            'slug' => 'kerajinan-desa',
+        ]);
+
+        $this->assertDatabaseHas('bumdes_categories', [
+            'name' => 'Unit Simpan Pinjam',
+            'slug' => 'unit-simpan-pinjam',
+        ]);
     }
 
     public function test_authenticated_admin_can_upload_editor_image(): void
@@ -1233,7 +1657,9 @@ class ExampleTest extends TestCase
     {
         $this->seed();
 
-        $villageId = (int) DB::table('villages')->value('id');
+        $village = DB::table('villages')->orderBy('id')->first();
+        $villageId = (int) $village->id;
+        $villageName = (string) $village->name;
         $latestPostId = DB::table('posts')->where('village_id', $villageId)->orderByDesc('published_at')->value('id');
         $businessId = (int) DB::table('businesses')->where('village_id', $villageId)->orderBy('name')->value('id');
         DB::table('posts')->where('id', $latestPostId)->update([
@@ -1256,13 +1682,27 @@ class ExampleTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        $galleryAlbumId = (int) DB::table('gallery_albums')->where('village_id', $villageId)->value('id');
+        DB::table('gallery_videos')->insert([
+            'village_id' => $villageId,
+            'album_id' => $galleryAlbumId,
+            'title' => 'Video Musyawarah Desa',
+            'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'youtube_video_id' => 'dQw4w9WgXcQ',
+            'embed_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+            'thumbnail_url' => 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+            'caption' => 'Dokumentasi video kegiatan desa.',
+            'sort_order' => 2,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $response = $this->getJson("/api/villages/{$villageId}/site");
 
         $response->assertOk()
             ->assertJsonPath('data.village.id', $villageId)
-            ->assertJsonPath('data.village.name', 'Desa Tanjung Lubuk')
+            ->assertJsonPath('data.village.name', $villageName)
             ->assertJsonPath('data.theme', 'modern-style-1')
-            ->assertJsonPath('data.application_version.frontend', '1.4.0')
+            ->assertJsonPath('data.application_version.frontend', ApplicationVersions::frontend()['current_version'])
             ->assertJsonCount(2, 'data.banners')
             ->assertJsonCount(6, 'data.posts')
             ->assertJsonCount(3, 'data.businesses')
@@ -1270,6 +1710,9 @@ class ExampleTest extends TestCase
             ->assertJsonCount(2, 'data.bumdes')
             ->assertJsonCount(2, 'data.bumdes.0.photos')
             ->assertJsonCount(2, 'data.projects')
+            ->assertJsonCount(1, 'data.galleries.0.videos')
+            ->assertJsonPath('data.galleries.0.videos.0.youtube_video_id', 'dQw4w9WgXcQ')
+            ->assertJsonPath('data.galleries.0.media', fn (array $media): bool => collect($media)->contains(fn (array $item): bool => $item['type'] === 'video'))
             ->assertJsonCount(2, 'data.desa_cantik.categories')
             ->assertJsonCount(2, 'data.desa_cantik.items')
             ->assertJsonMissingPath('data.settings.site_title')
@@ -1280,7 +1723,7 @@ class ExampleTest extends TestCase
 
         DB::table('villages')->where('id', $villageId)->update(['name' => 'Nama Belum Ter-cache']);
         $this->getJson("/api/villages/{$villageId}/site")
-            ->assertJsonPath('data.village.name', 'Desa Tanjung Lubuk');
+            ->assertJsonPath('data.village.name', $villageName);
 
         app(PublicVillageSite::class)->forget($villageId);
         $this->getJson("/api/villages/{$villageId}/site")
@@ -1299,14 +1742,16 @@ class ExampleTest extends TestCase
     {
         $this->seed();
         $village = DB::table('villages')->first();
+        $shortName = preg_replace('/^desa\s+/i', '', (string) $village->name) ?: (string) $village->name;
 
         foreach (range(1, 2) as $requestNumber) {
-            $this->getJson("/api/villages/{$village->id}/posts?q=UMKM&category=pengumuman&source=village")
+            $this->getJson("/api/villages/{$village->id}/posts?q=UMKM&category=pengumuman")
                 ->assertOk()
                 ->assertJsonCount(1, 'data.items')
-                ->assertJsonPath('data.items.0.title', 'Pemdes Tanjung Lubuk Membuka Pendataan UMKM dan Pelaku Usaha Rumah Tangga')
+                ->assertJsonPath('data.items.0.title', "Pemdes {$shortName} Membuka Pendataan UMKM dan Pelaku Usaha Rumah Tangga")
                 ->assertJsonPath('data.meta.total', 1)
-                ->assertJsonPath('data.filters.categories.0.name', fn (string $name): bool => $name !== '');
+                ->assertJsonPath('data.filters.categories.0.name', fn (string $name): bool => $name !== '')
+                ->assertJsonMissingPath('data.filters.sources');
         }
 
         $slug = DB::table('posts')->where('village_id', $village->id)->value('slug');
@@ -1419,6 +1864,98 @@ class ExampleTest extends TestCase
             ->assertOk()
             ->assertSee('Statistik Pengunjung')
             ->assertSee('Endpoint Pencatatan');
+    }
+
+    public function test_admin_desa_can_view_visitor_statistics_without_developer_details(): void
+    {
+        $this->seed();
+
+        $villageId = (int) DB::table('villages')->value('id');
+        $adminDesa = User::query()->create([
+            'village_id' => $villageId,
+            'name' => 'Admin Statistik Desa',
+            'username' => 'admin_statistik_desa',
+            'email' => 'admin.statistik.desa@test.local',
+            'password' => 'password',
+            'role' => 'admin_desa',
+        ]);
+        $editor = User::query()->create([
+            'village_id' => $villageId,
+            'name' => 'Editor Statistik Desa',
+            'username' => 'editor_statistik_desa',
+            'email' => 'editor.statistik.desa@test.local',
+            'password' => 'password',
+            'role' => 'editor',
+        ]);
+
+        $this->actingAs($adminDesa)->get('/admin/visitor-statistics')
+            ->assertOk()
+            ->assertSee('Statistik Pengunjung')
+            ->assertSee('Data Harian')
+            ->assertDontSee('Endpoint Pencatatan')
+            ->assertDontSee('X-Village-Analytics-Key');
+
+        $this->actingAs($adminDesa)->get('/admin')
+            ->assertOk()
+            ->assertSee('Statistik Pengunjung')
+            ->assertDontSee('Manajemen Desa');
+
+        $this->actingAs($editor)->get('/admin/visitor-statistics')->assertForbidden();
+    }
+
+    public function test_admin_desa_can_group_chart_and_download_visitor_statistics(): void
+    {
+        $this->seed();
+
+        $village = DB::table('villages')->first();
+        DB::table('village_visitor_daily_stats')->where('village_id', $village->id)->delete();
+
+        $januaryDate = now()->startOfYear()->addDays(4)->toDateString();
+        $februaryDate = now()->startOfYear()->addMonth()->addDays(2)->toDateString();
+
+        DB::table('village_visitor_daily_stats')->insert([
+            [
+                'village_id' => $village->id,
+                'visit_date' => $januaryDate,
+                'unique_visitors' => 10,
+                'total_visits' => 16,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'village_id' => $village->id,
+                'visit_date' => $februaryDate,
+                'unique_visitors' => 8,
+                'total_visits' => 12,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $adminDesa = User::query()->create([
+            'village_id' => $village->id,
+            'name' => 'Admin Chart Statistik',
+            'username' => 'admin_chart_statistik',
+            'email' => 'admin.chart.statistik@test.local',
+            'password' => 'password',
+            'role' => 'admin_desa',
+        ]);
+
+        $this->actingAs($adminDesa)->get('/admin/visitor-statistics')
+            ->assertOk()
+            ->assertSee('Chart Kunjungan')
+            ->assertSee('Download CSV')
+            ->assertSee('Tahun ini');
+
+        Livewire::actingAs($adminDesa)
+            ->test('admin.visitor-statistics')
+            ->set('period', 'year')
+            ->set('groupBy', 'month')
+            ->assertSet('summary.total_visits', 28)
+            ->assertSet('summary.unique_visitors', 18)
+            ->assertSee('Data Bulanan')
+            ->call('download')
+            ->assertFileDownloaded("statistik-pengunjung-{$village->slug}-year-month.csv");
     }
 
     public function test_map_endpoints_proxy_sidesi_with_app_key_and_postman_user_agent(): void
@@ -1771,7 +2308,9 @@ class ExampleTest extends TestCase
             ->set('form.placement', 'footer')
             ->call('save')
             ->assertHasNoErrors()
-            ->assertSet('showModal', false);
+            ->assertSet('showModal', false)
+            ->assertSet('activeTab', 'active')
+            ->assertSet('activePlacementTab', 'footer');
 
         $this->assertDatabaseHas('village_widgets', [
             'village_id' => $villageId,
@@ -1827,6 +2366,66 @@ class ExampleTest extends TestCase
             ->all();
 
         $this->assertSame($newOrder, $sortedIds);
+    }
+
+    public function test_village_user_can_move_widget_between_allowed_placements(): void
+    {
+        $this->seed();
+
+        $villageId = (int) DB::table('villages')->orderBy('id')->value('id');
+        $adminDesa = User::query()->create([
+            'village_id' => $villageId,
+            'name' => 'Admin Widget Move',
+            'username' => 'admin_widget_move',
+            'email' => 'admin.widget.move@test.local',
+            'password' => 'password',
+            'role' => 'admin_desa',
+        ]);
+        $this->actingAs($adminDesa);
+
+        $widget = DB::table('village_widgets')
+            ->where('village_id', $villageId)
+            ->where('widget_type', 'announcement_ticker')
+            ->first();
+        $sourcePlacement = (string) $widget->placement;
+        $targetPlacement = $sourcePlacement === 'header' ? 'below_banner' : 'header';
+        $targetIds = DB::table('village_widgets')
+            ->where('village_id', $villageId)
+            ->where('placement', $targetPlacement)
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        Livewire::test('admin.widget-manager')
+            ->call(
+                'reorderWidgets',
+                $targetPlacement,
+                [...$targetIds, (int) $widget->id],
+                (int) $widget->id,
+                $sourcePlacement,
+            )
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('village_widgets', [
+            'id' => $widget->id,
+            'placement' => $targetPlacement,
+            'sort_order' => count($targetIds) + 1,
+        ]);
+
+        $officeHours = DB::table('village_widgets')
+            ->where('village_id', $villageId)
+            ->where('widget_type', 'office_hours')
+            ->first();
+
+        Livewire::test('admin.widget-manager')
+            ->call('reorderWidgets', 'home', [(int) $officeHours->id], (int) $officeHours->id, 'footer')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('village_widgets', [
+            'id' => $officeHours->id,
+            'placement' => 'footer',
+        ]);
     }
 
     public function test_empty_widget_form_shows_validation_errors(): void

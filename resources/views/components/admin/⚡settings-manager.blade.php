@@ -167,7 +167,7 @@ new class extends Component
                 <x-admin.input label="Tagline" model="settings.site_tagline" />
                 <x-admin.textarea label="Teks Footer" model="settings.site_footer_text" />
                 <div>
-                    <label class="text-sm font-bold">Logo Desa</label>
+                    <label class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-image text-amber-600"></i>Logo Desa</label>
                     <input type="file" wire:model="logoUpload" accept="image/*" class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
                     @error('logoUpload') <div class="mt-1 text-sm text-red-600">{{ $message }}</div> @enderror
                     @if($logoUpload)
@@ -177,7 +177,7 @@ new class extends Component
                     @endif
                 </div>
                 <div>
-                    <label class="text-sm font-bold">Favicon Desa</label>
+                    <label class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-star text-amber-600"></i>Favicon Desa</label>
                     <input type="file" wire:model="faviconUpload" accept="image/jpeg,image/png,image/webp" class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
                     @error('faviconUpload') <div class="mt-1 text-sm text-red-600">{{ $message }}</div> @enderror
                     @if($faviconUpload)
@@ -186,7 +186,7 @@ new class extends Component
                         <img src="{{ $villageForm['favicon_url'] }}" alt="Favicon saat ini" class="mt-2 size-14 rounded-md border border-zinc-200 object-contain p-1">
                     @endif
                 </div>
-                <button class="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Simpan Pengaturan</button>
+                <button class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><i class="fa-solid fa-floppy-disk"></i>Simpan Pengaturan</button>
             </div>
         </div>
     </aside>

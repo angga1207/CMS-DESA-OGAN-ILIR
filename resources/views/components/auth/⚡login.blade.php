@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
 
@@ -9,20 +10,29 @@ new class extends Component {
     public string $username = '';
     public string $password = '';
     public string $captcha = '';
+    public int $captchaVersion = 1;
     public bool $remember = false;
 
     public function login(): void
     {
-        $credentials = $this->validate(
-            [
-                'username' => ['required', 'string'],
-                'password' => ['required', 'string'],
-                'captcha' => ['required', 'captcha'],
-            ],
-            [
-                'captcha.captcha' => 'Kode captcha tidak sesuai.',
-            ],
-        );
+        try {
+            $credentials = $this->validate(
+                [
+                    'username' => ['required', 'string'],
+                    'password' => ['required', 'string'],
+                    'captcha' => ['required', 'captcha'],
+                ],
+                [
+                    'captcha.captcha' => 'Kode captcha tidak sesuai.',
+                ],
+            );
+        } catch (ValidationException $exception) {
+            if ($exception->validator->errors()->has('captcha')) {
+                $this->resetCaptcha();
+            }
+
+            throw $exception;
+        }
 
         if (
             !Auth::attempt(
@@ -35,7 +45,8 @@ new class extends Component {
         ) {
             LivewireAlert::title('Login gagal')->text('Username atau password tidak sesuai.')->error()->show();
 
-            $this->reset('password', 'captcha');
+            $this->reset('password');
+            $this->resetCaptcha();
             return;
         }
 
@@ -44,6 +55,12 @@ new class extends Component {
         LivewireAlert::title('Berhasil masuk')->text('Selamat datang di dasbor pengelolaan desa.')->success()->timer(1200)->show();
 
         $this->redirectRoute('admin.dashboard', navigate: true);
+    }
+
+    private function resetCaptcha(): void
+    {
+        $this->reset('captcha');
+        $this->captchaVersion++;
     }
 };
 ?>
@@ -133,11 +150,11 @@ new class extends Component {
                             <button type="button" class="overflow-hidden rounded-md border border-zinc-300 bg-zinc-50"
                                 onclick="this.querySelector('img').src='{{ captcha_src('flat') }}&'+Math.random()"
                                 aria-label="Muat ulang captcha">
-                                <img src="{{ captcha_src('flat') }}" alt="Captcha" class="h-12 w-full object-cover">
+                                <img src="{{ captcha_src('flat') }}&v={{ $captchaVersion }}" alt="Captcha" class="h-12 w-full object-cover">
                             </button>
                             <input id="captcha" type="text" wire:model="captcha"
                                 class="min-h-12 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
-                                placeholder="Masukkan kode">
+                                maxlength="4" inputmode="text" placeholder="Masukkan 4 karakter">
                         </div>
                         @error('captcha')
                             <div class="mt-1 text-sm text-red-600">{{ $message }}</div>

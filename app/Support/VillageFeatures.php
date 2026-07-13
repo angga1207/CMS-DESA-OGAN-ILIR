@@ -94,7 +94,8 @@ final class VillageFeatures
     {
         return [
             'content-categories' => 'articles',
-            'content-sources' => 'articles',
+            'business-categories' => 'businesses',
+            'bumdes-categories' => 'bumdes',
         ][$reference] ?? null;
     }
 }

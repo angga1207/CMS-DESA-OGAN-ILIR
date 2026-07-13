@@ -19,6 +19,144 @@ html {
     scroll-behavior: smooth;
 }
 
+.admin-cms {
+    background:
+        radial-gradient(circle at top right, rgba(217, 119, 6, 0.11), transparent 28rem),
+        linear-gradient(180deg, #f7faf4 0%, #f1f5ef 100%);
+}
+
+.admin-cms .admin-panel,
+.admin-cms section.rounded-lg.border.border-zinc-200.bg-white {
+    border-color: rgba(15, 64, 52, 0.12) !important;
+    border-radius: 0.85rem !important;
+    box-shadow: 0 18px 45px rgba(16, 36, 31, 0.07);
+}
+
+.admin-cms .admin-panel-header,
+.admin-cms section.rounded-lg.border.border-zinc-200.bg-white > .border-b:first-child {
+    background:
+        linear-gradient(90deg, rgba(16, 36, 31, 0.045), rgba(217, 119, 6, 0.055)),
+        #ffffff;
+    border-color: rgba(15, 64, 52, 0.1) !important;
+}
+
+.admin-cms table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.admin-cms thead.bg-zinc-50,
+.admin-cms thead.bg-zinc-100 {
+    background: #eef4ec !important;
+    color: #31564d !important;
+    letter-spacing: 0;
+}
+
+.admin-cms tbody tr {
+    transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.admin-cms tbody tr:hover {
+    background: #fbfcf8;
+}
+
+.admin-field-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #24443c;
+    font-size: 0.78rem;
+    font-weight: 850;
+}
+
+.admin-control {
+    min-height: 2.75rem;
+    width: 100%;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(15, 64, 52, 0.18);
+    background: #fff;
+    padding: 0.65rem 0.8rem;
+    font-size: 0.9rem;
+    color: #18181b;
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.admin-control::placeholder {
+    color: #9ca3af;
+}
+
+.admin-control:focus {
+    border-color: #0f766e;
+    box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+    outline: none;
+}
+
+.admin-control[readonly],
+.admin-control:disabled {
+    background: #f4f6f2;
+    color: #71717a;
+}
+
+.admin-cms input[type='file'] {
+    min-height: 2.75rem;
+    width: 100%;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(15, 64, 52, 0.18);
+    background: #fff;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.9rem;
+    color: #3f3f46;
+}
+
+.admin-cms input[type='file']:focus {
+    border-color: #0f766e;
+    box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+    outline: none;
+}
+
+.admin-cms label.text-sm.font-bold {
+    color: #24443c;
+    font-size: 0.78rem;
+    font-weight: 850;
+}
+
+.admin-error {
+    margin-top: 0.35rem;
+    color: #b91c1c;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.admin-btn-primary,
+.admin-cms a.bg-emerald-600,
+.admin-cms button.bg-emerald-600 {
+    background: linear-gradient(135deg, #0f766e, #134e4a) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 22px rgba(15, 118, 110, 0.22);
+    transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.admin-btn-primary:hover,
+.admin-cms a.bg-emerald-600:hover,
+.admin-cms button.bg-emerald-600:hover {
+    filter: brightness(1.03);
+    box-shadow: 0 14px 28px rgba(15, 118, 110, 0.28);
+    transform: translateY(-1px);
+}
+
+.admin-cms button.rounded.bg-zinc-100,
+.admin-cms a.rounded.bg-zinc-100 {
+    border: 1px solid rgba(15, 64, 52, 0.12);
+    border-radius: 0.55rem !important;
+    background: #f3f7ef !important;
+    color: #24443c;
+}
+
+.admin-cms button.rounded.bg-red-50 {
+    border: 1px solid rgba(185, 28, 28, 0.12);
+    border-radius: 0.55rem !important;
+}
+
 button:not(:disabled),
 [role='button']:not([aria-disabled='true']),
 input[type='submit']:not(:disabled),
@@ -54,9 +192,10 @@ input:focus-visible {
 .ts-control {
     min-height: 2.75rem;
     align-items: center;
-    border-radius: 0.375rem;
-    border-color: #d4d4d8;
-    padding: 0.55rem 0.75rem;
+    border-radius: 0.65rem;
+    border-color: rgba(15, 64, 52, 0.18);
+    padding: 0.58rem 0.8rem;
+    box-shadow: none;
 }
 
 .ts-wrapper {
@@ -64,8 +203,8 @@ input:focus-visible {
 }
 
 .ts-wrapper.focus .ts-control {
-    border-color: #059669;
-    box-shadow: 0 0 0 1px #059669;
+    border-color: #0f766e;
+    box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
 }
 
 .ts-wrapper.disabled {
@@ -80,7 +219,9 @@ input:focus-visible {
 
 .ts-dropdown {
     z-index: 70;
-    border-color: #d4d4d8;
+    border-color: rgba(15, 64, 52, 0.15);
+    border-radius: 0.65rem;
+    box-shadow: 0 18px 45px rgba(16, 36, 31, 0.12);
 }
 
 /* Quill only ships labels for its default heading values. Our editor uses

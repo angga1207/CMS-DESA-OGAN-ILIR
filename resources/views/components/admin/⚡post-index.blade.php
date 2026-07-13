@@ -23,27 +23,22 @@ new class extends Component {
 
     public string $categoryFilter = '';
 
-    public string $sourceFilter = '';
-
     public string $sortBy = 'updated_at';
 
     public string $sortDirection = 'desc';
 
     public array $categoryOptions = [];
 
-    public array $sourceOptions = [];
-
     public function mount(): void
     {
         $this->villageId = CurrentVillage::id();
         $this->categoryOptions = DB::table('content_categories')->where('village_id', $this->villageId)->orderBy('name')->pluck('name', 'id')->prepend('Semua kategori', '')->all();
-        $this->sourceOptions = DB::table('content_sources')->where('village_id', $this->villageId)->orderBy('name')->pluck('name', 'code')->prepend('Semua sumber', '')->all();
         $this->loadPosts();
     }
 
     public function updated(string $property): void
     {
-        if (in_array($property, ['search', 'statusFilter', 'categoryFilter', 'sourceFilter', 'sortBy', 'sortDirection'], true)) {
+        if (in_array($property, ['search', 'statusFilter', 'categoryFilter', 'sortBy', 'sortDirection'], true)) {
             $this->page = 1;
             $this->loadPosts();
         }
@@ -54,7 +49,6 @@ new class extends Component {
         $this->search = '';
         $this->statusFilter = '';
         $this->categoryFilter = '';
-        $this->sourceFilter = '';
         $this->sortBy = 'updated_at';
         $this->sortDirection = 'desc';
         $this->page = 1;
@@ -63,6 +57,7 @@ new class extends Component {
 
     public function delete(int $id): void
     {
+        DB::table('post_revisions')->where('village_id', $this->villageId)->where('post_id', $id)->delete();
         DB::table('posts')->where('village_id', $this->villageId)->where('id', $id)->delete();
         PublicSiteCache::forget($this->villageId);
         $this->loadPosts();
@@ -95,8 +90,7 @@ new class extends Component {
                 });
             })
             ->when($this->statusFilter !== '', fn($query) => $query->where('posts.status', $this->statusFilter))
-            ->when($this->categoryFilter !== '', fn($query) => $query->where('posts.category_id', $this->categoryFilter))
-            ->when($this->sourceFilter !== '', fn($query) => $query->where('posts.source_type', $this->sourceFilter));
+            ->when($this->categoryFilter !== '', fn($query) => $query->where('posts.category_id', $this->categoryFilter));
 
         $this->totalPosts = (clone $query)->count('posts.id');
         $this->page = min($this->page, max((int) ceil($this->totalPosts / $this->perPage), 1));
@@ -106,7 +100,6 @@ new class extends Component {
             'updated_at' => 'posts.updated_at',
             'status' => 'posts.status',
             'category' => 'content_categories.name',
-            'source' => 'posts.source_type',
         ];
         $direction = $this->sortDirection === 'asc' ? 'asc' : 'desc';
 
@@ -122,24 +115,22 @@ new class extends Component {
 };
 ?>
 
-<section class="rounded-lg border border-zinc-200 bg-white shadow-sm">
-    <div class="flex flex-col gap-3 border-b border-zinc-200 p-5 sm:flex-row sm:items-center sm:justify-between">
+<section class="admin-panel overflow-hidden border bg-white">
+    <div class="admin-panel-header flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h2 class="font-black">Daftar Artikel</h2>
+            <h2 class="flex items-center gap-2 font-black text-emerald-950"><i
+                    class="fa-solid fa-newspaper text-amber-600"></i>Daftar Artikel</h2>
             <p class="text-sm text-zinc-500">Form tambah/edit artikel dibuka di halaman.</p>
         </div>
-        <a href="{{ route('admin.posts.create') }}" class="inline-flex min-h-11 items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><span>Tambah Artikel</span></a>
+        <a href="{{ route('admin.posts.create') }}"
+            class="admin-btn-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-black text-white"><i
+                class="fa-solid fa-plus"></i><span>Tambah Artikel</span></a>
     </div>
-    <div class="grid gap-3 border-b border-zinc-200 p-5 md:grid-cols-2 xl:grid-cols-6">
+    <div class="grid gap-3 border-b border-zinc-200 p-5 md:grid-cols-2 xl:grid-cols-5">
         <x-admin.input label="Cari Artikel" model="search" placeholder="Judul, ringkasan, atau slug"
             class="xl:col-span-2" />
-        <x-admin.select label="Status" model="statusFilter" :options="['' => 'Semua status', 'draft' => 'Draft', 'published' => 'Terbit', 'archived' => 'Diarsipkan']" />
+        <x-admin.select label="Status" model="statusFilter" :options="['' => 'Semua status', 'draft' => 'Draft', 'published' => 'Terbit']" />
         <x-admin.select label="Kategori" model="categoryFilter" :options="$categoryOptions" />
-        <x-admin.select label="Sumber" model="sourceFilter" :options="$sourceOptions" />
-        {{-- <div class="grid grid-cols-[1fr_120px] gap-2">
-            <x-admin.select label="Urutkan" model="sortBy" :options="['updated_at' => 'Terakhir diubah', 'title' => 'Judul', 'category' => 'Kategori', 'source' => 'Sumber', 'status' => 'Status']" />
-            <x-admin.select label="Arah" model="sortDirection" :options="['desc' => 'Z-A', 'asc' => 'A-Z']" />
-        </div> --}}
         <button type="button" wire:click="resetFilters"
             class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-zinc-300 px-3 text-sm font-bold text-zinc-700 md:col-span-2 xl:col-span-1 xl:self-end">
             <i class="fa-solid fa-rotate-left"></i>
@@ -152,14 +143,13 @@ new class extends Component {
                 <tr>
                     <th class="px-5 py-3">Judul</th>
                     <th class="px-5 py-3">Kategori</th>
-                    <th class="px-5 py-3">Sumber</th>
                     <th class="px-5 py-3">Status</th>
                     <th class="w-44 px-5 py-3">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-zinc-200">
                 @forelse($posts as $post)
-                    <tr>
+                    <tr class="align-middle">
                         <td class="px-5 py-4">
                             <div class="flex min-w-64 items-center gap-3">
                                 <div
@@ -180,7 +170,6 @@ new class extends Component {
                                         </div>
                                         <div class="mt-1 line-clamp-1 text-xs text-zinc-500">
                                             {{ $post['excerpt'] ?: 'Belum ada ringkasan artikel.' }}</div>
-                                        {{-- date --}}
                                         <div class="mt-1 line-clamp-1 text-xs text-zinc-500 flex">
                                             <i class="fa-solid fa-calendar-alt"></i>
                                             {{ Carbon::parse($post['published_at'])->isoFormat('d MMM Y HH:mm [wib]') }}
@@ -190,20 +179,21 @@ new class extends Component {
                             </div>
                         </td>
                         <td class="px-5 py-4"><x-admin.pill :value="$post['category_name']" type="category" /></td>
-                        <td class="px-5 py-4"><x-admin.pill :value="$post['source_type']" /></td>
                         <td class="px-5 py-4"><x-admin.pill :value="$post['status']" /></td>
                         <td class="px-5 py-4">
                             <div class="flex gap-2">
                                 <a href="{{ route('admin.posts.edit', $post['id']) }}"
-                                    class="rounded bg-zinc-100 px-3 py-2 text-xs font-bold">Edit</a>
+                                    class="inline-flex min-h-9 items-center gap-2 rounded bg-zinc-100 px-3 text-xs font-bold"><i
+                                        class="fa-solid fa-pen"></i>Edit</a>
                                 <button wire:click="delete({{ $post['id'] }})" wire:confirm="Hapus artikel ini?"
-                                    class="rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700">Hapus</button>
+                                    class="inline-flex min-h-9 items-center gap-2 rounded bg-red-50 px-3 text-xs font-bold text-red-700"><i
+                                        class="fa-solid fa-trash"></i>Hapus</button>
                             </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-5 py-10 text-center text-zinc-500">Tidak ada artikel yang cocok.
+                        <td colspan="4" class="px-5 py-10 text-center text-zinc-500">Tidak ada artikel yang cocok.
                         </td>
                     </tr>
                 @endforelse

@@ -223,7 +223,9 @@ new class extends Component {
                 <p class="text-sm text-zinc-500">Peran tersedia: {{ implode(', ', $this->availableRoles()) }}.</p>
             </div>
             <button type="button" wire:click="create"
-                class="inline-flex min-h-11 items-center justify-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Tambah
+                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white">
+                <i class="fa-solid fa-user-plus"></i>
+                Tambah
                 Pengguna</button>
         </div>
 
@@ -333,7 +335,10 @@ new class extends Component {
                         <div class=""></div>
                     @endif
                     <div>
-                        <label class="text-sm font-bold">Password</label>
+                        <label class="flex items-center gap-2 text-sm font-bold">
+                            <i class="fa-solid fa-lock text-amber-600"></i>
+                            Password
+                        </label>
                         <div class="relative mt-1">
                             <input :type="showPassword ? 'text' : 'password'" wire:model.live="form.password"
                                 autocomplete="new-password"
@@ -350,7 +355,10 @@ new class extends Component {
                         @enderror
                     </div>
                     <div>
-                        <label class="text-sm font-bold">Konfirmasi Password</label>
+                        <label class="flex items-center gap-2 text-sm font-bold">
+                            <i class="fa-solid fa-shield-halved text-amber-600"></i>
+                            Konfirmasi Password
+                        </label>
                         <div class="relative mt-1">
                             <input :type="showPasswordConfirmation ? 'text' : 'password'"
                                 wire:model.live="form.password_confirmation" autocomplete="new-password-confirmation"
@@ -369,9 +377,9 @@ new class extends Component {
                     </div>
                     <div class="flex justify-end gap-2 border-t border-zinc-200 pt-5 sm:col-span-2">
                         <button type="button" wire:click="closeModal"
-                            class="inline-flex min-h-11 items-center rounded-md border border-zinc-300 px-4 text-sm font-bold">Batal</button>
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-bold"><i class="fa-solid fa-xmark"></i>Batal</button>
                         <button
-                            class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Simpan
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><i class="fa-solid fa-floppy-disk"></i>Simpan
                             Pengguna</button>
                     </div>
                 </form>

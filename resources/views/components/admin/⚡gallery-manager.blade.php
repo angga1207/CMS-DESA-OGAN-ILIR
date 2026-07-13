@@ -16,6 +16,8 @@ new class extends Component {
 
     public array $photos = [];
 
+    public array $videos = [];
+
     public int $villageId = 1;
 
     public bool $showAlbumModal = false;
@@ -29,6 +31,12 @@ new class extends Component {
     public string $photoTitle = '';
 
     public string $photoCaption = '';
+
+    public array $videoForm = [
+        'title' => '',
+        'video_url' => '',
+        'caption' => '',
+    ];
 
     public array $albumForm = [
         'id' => null,
@@ -114,7 +122,7 @@ new class extends Component {
         if ($album) {
             $images = app(OptimizedImageStorage::class);
             $images->delete($album->cover_image_url);
-            DB::table('gallery_photos')->where('album_id', $id)->pluck('image_url')->each(fn(?string $url) => $images->delete($url));
+            DB::table('gallery_photos')->where('album_id', $id)->pluck('image_url')->each(fn (?string $url) => $images->delete($url));
             DB::table('gallery_albums')->where('id', $id)->delete();
         }
 
@@ -123,6 +131,7 @@ new class extends Component {
         if ($this->selectedAlbumId === $id) {
             $this->selectedAlbumId = null;
             $this->photos = [];
+            $this->videos = [];
         }
 
         $this->loadAlbums();
@@ -157,7 +166,7 @@ new class extends Component {
             ],
         );
 
-        $sort = (int) DB::table('gallery_photos')->where('album_id', $this->selectedAlbumId)->max('sort_order');
+        $sort = $this->nextSortOrder();
 
         foreach ($this->photoUploads as $upload) {
             $sort++;
@@ -182,6 +191,60 @@ new class extends Component {
         LivewireAlert::title('Terunggah')->text('Foto galeri berhasil ditambahkan.')->success()->timer(1200)->show();
     }
 
+    public function saveVideo(): void
+    {
+        $this->validate(
+            [
+                'selectedAlbumId' => ['required', 'integer'],
+                'videoForm.title' => ['nullable', 'string', 'max:255'],
+                'videoForm.video_url' => ['required', 'url', 'max:2048'],
+                'videoForm.caption' => ['nullable', 'string'],
+            ],
+            [],
+            [
+                'videoForm.title' => 'Judul Video',
+                'videoForm.video_url' => 'URL YouTube',
+                'videoForm.caption' => 'Caption Video',
+            ],
+        );
+
+        if (! DB::table('gallery_albums')->where('village_id', $this->villageId)->where('id', $this->selectedAlbumId)->exists()) {
+            return;
+        }
+
+        $youtubeVideoId = $this->youtubeVideoId($this->videoForm['video_url']);
+
+        if (! $youtubeVideoId) {
+            $this->addError('videoForm.video_url', 'Masukkan link YouTube yang valid.');
+
+            return;
+        }
+
+        $sort = $this->nextSortOrder() + 1;
+        $title = $this->videoForm['title'] ?: 'Video Gallery '.$sort;
+
+        DB::table('gallery_videos')->insert([
+            'village_id' => $this->villageId,
+            'album_id' => $this->selectedAlbumId,
+            'title' => $title,
+            'video_url' => $this->videoForm['video_url'],
+            'youtube_video_id' => $youtubeVideoId,
+            'embed_url' => "https://www.youtube.com/embed/{$youtubeVideoId}",
+            'thumbnail_url' => "https://img.youtube.com/vi/{$youtubeVideoId}/hqdefault.jpg",
+            'caption' => $this->videoForm['caption'] ?: null,
+            'sort_order' => $sort,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        PublicSiteCache::forget($this->villageId);
+
+        $this->resetVideoForm();
+        $this->loadVideos();
+        $this->loadAlbums();
+        LivewireAlert::title('Tersimpan')->text('Video galeri berhasil ditambahkan.')->success()->timer(1200)->show();
+    }
+
     public function deletePhoto(int $id): void
     {
         $photo = DB::table('gallery_photos')->where('village_id', $this->villageId)->where('id', $id)->first();
@@ -196,9 +259,41 @@ new class extends Component {
         $this->loadAlbums();
     }
 
+    public function deleteVideo(int $id): void
+    {
+        $video = DB::table('gallery_videos')->where('village_id', $this->villageId)->where('id', $id)->first();
+
+        if ($video) {
+            DB::table('gallery_videos')->where('id', $id)->delete();
+        }
+
+        PublicSiteCache::forget($this->villageId);
+        $this->loadVideos();
+        $this->loadAlbums();
+    }
+
     private function loadAlbums(): void
     {
-        $this->albums = DB::table('gallery_albums')->leftJoin('gallery_photos', 'gallery_albums.id', '=', 'gallery_photos.album_id')->where('gallery_albums.village_id', $this->villageId)->select('gallery_albums.*', DB::raw('count(gallery_photos.id) as photos_count'))->groupBy('gallery_albums.id')->orderByDesc('gallery_albums.album_date')->orderByDesc('gallery_albums.created_at')->get()->map(fn($row): array => (array) $row)->all();
+        $photoCounts = DB::table('gallery_photos')
+            ->select('album_id', DB::raw('count(*) as photos_count'))
+            ->where('village_id', $this->villageId)
+            ->groupBy('album_id');
+
+        $videoCounts = DB::table('gallery_videos')
+            ->select('album_id', DB::raw('count(*) as videos_count'))
+            ->where('village_id', $this->villageId)
+            ->groupBy('album_id');
+
+        $this->albums = DB::table('gallery_albums')
+            ->leftJoinSub($photoCounts, 'photo_counts', 'gallery_albums.id', '=', 'photo_counts.album_id')
+            ->leftJoinSub($videoCounts, 'video_counts', 'gallery_albums.id', '=', 'video_counts.album_id')
+            ->where('gallery_albums.village_id', $this->villageId)
+            ->select('gallery_albums.*', DB::raw('coalesce(photo_counts.photos_count, 0) as photos_count'), DB::raw('coalesce(video_counts.videos_count, 0) as videos_count'))
+            ->orderByDesc('gallery_albums.album_date')
+            ->orderByDesc('gallery_albums.created_at')
+            ->get()
+            ->map(fn ($row): array => (array) $row)
+            ->all();
 
         if (!$this->selectedAlbumId && count($this->albums)) {
             $this->selectedAlbumId = $this->albums[0]['id'];
@@ -209,7 +304,74 @@ new class extends Component {
 
     private function loadPhotos(): void
     {
-        $this->photos = $this->selectedAlbumId ? DB::table('gallery_photos')->where('village_id', $this->villageId)->where('album_id', $this->selectedAlbumId)->orderBy('sort_order')->get()->map(fn($row): array => (array) $row)->all() : [];
+        $this->photos = $this->selectedAlbumId ? DB::table('gallery_photos')->where('village_id', $this->villageId)->where('album_id', $this->selectedAlbumId)->orderBy('sort_order')->get()->map(fn ($row): array => (array) $row)->all() : [];
+        $this->loadVideos();
+    }
+
+    private function loadVideos(): void
+    {
+        $this->videos = $this->selectedAlbumId ? DB::table('gallery_videos')->where('village_id', $this->villageId)->where('album_id', $this->selectedAlbumId)->orderBy('sort_order')->get()->map(fn ($row): array => (array) $row)->all() : [];
+    }
+
+    private function nextSortOrder(): int
+    {
+        if (! $this->selectedAlbumId) {
+            return 0;
+        }
+
+        return max(
+            (int) DB::table('gallery_photos')->where('album_id', $this->selectedAlbumId)->max('sort_order'),
+            (int) DB::table('gallery_videos')->where('album_id', $this->selectedAlbumId)->max('sort_order'),
+        );
+    }
+
+    private function resetVideoForm(): void
+    {
+        $this->videoForm = [
+            'title' => '',
+            'video_url' => '',
+            'caption' => '',
+        ];
+    }
+
+    private function youtubeVideoId(string $url): ?string
+    {
+        $parts = parse_url($url);
+        $host = strtolower($parts['host'] ?? '');
+        $path = trim($parts['path'] ?? '', '/');
+
+        if (str_contains($host, 'youtu.be')) {
+            return $this->validYoutubeId(explode('/', $path)[0] ?? null);
+        }
+
+        if (! str_contains($host, 'youtube.com')) {
+            return null;
+        }
+
+        parse_str($parts['query'] ?? '', $query);
+
+        if (isset($query['v'])) {
+            return $this->validYoutubeId((string) $query['v']);
+        }
+
+        foreach (['embed/', 'shorts/'] as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return $this->validYoutubeId(substr($path, strlen($prefix)));
+            }
+        }
+
+        return null;
+    }
+
+    private function validYoutubeId(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        $id = explode('?', explode('&', $value)[0])[0];
+
+        return preg_match('/^[A-Za-z0-9_-]{6,20}$/', $id) ? $id : null;
     }
 
     private function resetAlbumForm(): void
@@ -235,7 +397,7 @@ new class extends Component {
                 <p class="text-sm text-zinc-500">Album kegiatan dan dokumentasi desa.</p>
             </div>
             <button type="button" wire:click="createAlbum"
-                class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Tambah</button>
+                class="inline-flex min-h-11 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><i class="fa-solid fa-plus"></i>Tambah</button>
         </div>
 
         <div class="divide-y divide-zinc-200">
@@ -247,15 +409,15 @@ new class extends Component {
                             alt="{{ $album['title'] }}" class="size-16 rounded-md object-cover">
                         <span>
                             <span class="block font-black">{{ $album['title'] }}</span>
-                            <span class="block text-sm text-zinc-500">{{ $album['photos_count'] }} foto</span>
+                            <span class="block text-sm text-zinc-500">{{ $album['photos_count'] }} foto · {{ $album['videos_count'] }} video</span>
                         </span>
                     </button>
                     <div class="mt-2 flex gap-2 pl-2">
                         <button type="button" wire:click="editAlbum({{ $album['id'] }})"
-                            class="rounded bg-zinc-100 px-3 py-2 text-xs font-bold">Edit</button>
+                            class="inline-flex items-center gap-2 rounded bg-zinc-100 px-3 py-2 text-xs font-bold"><i class="fa-solid fa-pen"></i>Edit</button>
                         <button type="button" wire:click="deleteAlbum({{ $album['id'] }})"
-                            wire:confirm="Hapus album dan semua foto?"
-                            class="rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700">Hapus</button>
+                            wire:confirm="Hapus album dan semua foto/video?"
+                            class="inline-flex items-center gap-2 rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700"><i class="fa-solid fa-trash"></i>Hapus</button>
                     </div>
                 </div>
             @empty
@@ -264,54 +426,123 @@ new class extends Component {
         </div>
     </section>
 
-    <section class="space-y-5">
-        <div class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-            <h2 class="font-black">Upload Foto</h2>
-            <form wire:submit="savePhotos" class="mt-4 grid gap-4 lg:grid-cols-3">
-                <x-admin.input label="Judul Foto" model="photoTitle" placeholder="opsional" />
-                <x-admin.input label="Caption" model="photoCaption" placeholder="opsional" />
-                <div>
-                    <label class="text-sm font-bold">File Foto</label>
-                    <input type="file" wire:model="photoUploads" accept="image/*" multiple
-                        class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
-                    @error('photoUploads')
-                        <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
-                    @enderror
-                    @error('photoUploads.*')
-                        <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
-                    @enderror
-                    <div wire:loading wire:target="photoUploads" class="mt-1 text-sm text-zinc-500">Menyiapkan foto...
-                    </div>
-                </div>
-                <div class="lg:col-span-3">
-                    <button
-                        class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Upload
-                        Foto</button>
-                </div>
-            </form>
+    <section class="space-y-5" x-data="{ activeGalleryTab: 'photo' }">
+        <div class="rounded-lg border border-zinc-200 bg-white p-2 shadow-sm">
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" @click="activeGalleryTab = 'photo'"
+                    :class="activeGalleryTab === 'photo' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-zinc-50 text-zinc-600 hover:bg-zinc-100'"
+                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-black transition">
+                    <i class="fa-solid fa-images"></i>
+                    Foto
+                </button>
+                <button type="button" @click="activeGalleryTab = 'video'"
+                    :class="activeGalleryTab === 'video' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-zinc-50 text-zinc-600 hover:bg-zinc-100'"
+                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-black transition">
+                    <i class="fa-brands fa-youtube"></i>
+                    Video
+                </button>
+            </div>
         </div>
 
-        <div class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-            <h2 class="font-black">Foto Album</h2>
-            <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                @forelse($photos as $photo)
-                    <article class="overflow-hidden rounded-lg border border-zinc-200">
-                        <img src="{{ $photo['image_url'] }}" alt="{{ $photo['title'] }}"
-                            class="h-44 w-full object-cover">
-                        <div class="p-4">
-                            <h3 class="font-black">{{ $photo['title'] }}</h3>
-                            <p class="mt-1 line-clamp-2 text-sm text-zinc-500">{{ $photo['caption'] }}</p>
-                            <button type="button" wire:click="deletePhoto({{ $photo['id'] }})"
-                                wire:confirm="Hapus foto ini?"
-                                class="mt-3 rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700">Hapus
-                                Foto</button>
+        <div x-show="activeGalleryTab === 'photo'" x-cloak class="space-y-5">
+            <div class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+                <h2 class="font-black">Upload Foto</h2>
+                <form wire:submit="savePhotos" class="mt-4 grid gap-4 lg:grid-cols-3">
+                    <x-admin.input label="Judul Foto" model="photoTitle" placeholder="opsional" />
+                    <x-admin.input label="Caption" model="photoCaption" placeholder="opsional" />
+                    <div>
+                        <label class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-images text-amber-600"></i>File Foto</label>
+                        <input type="file" wire:model="photoUploads" accept="image/*" multiple
+                            class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                        @error('photoUploads')
+                            <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                        @enderror
+                        @error('photoUploads.*')
+                            <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                        @enderror
+                        <div wire:loading wire:target="photoUploads" class="mt-1 text-sm text-zinc-500">Menyiapkan foto...
                         </div>
-                    </article>
-                @empty
-                    <div
-                        class="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500 sm:col-span-2 xl:col-span-3">
-                        Pilih album lalu upload foto.</div>
-                @endforelse
+                    </div>
+                    <div class="lg:col-span-3">
+                        <button
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><i class="fa-solid fa-upload"></i>Upload
+                            Foto</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+                <h2 class="font-black">Foto Album</h2>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    @forelse($photos as $photo)
+                        <article class="overflow-hidden rounded-lg border border-zinc-200">
+                            <img src="{{ $photo['image_url'] }}" alt="{{ $photo['title'] }}"
+                                class="h-44 w-full object-cover">
+                            <div class="p-4">
+                                <h3 class="font-black">{{ $photo['title'] }}</h3>
+                                <p class="mt-1 line-clamp-2 text-sm text-zinc-500">{{ $photo['caption'] }}</p>
+                                <button type="button" wire:click="deletePhoto({{ $photo['id'] }})"
+                                    wire:confirm="Hapus foto ini?"
+                                    class="mt-3 inline-flex items-center gap-2 rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700"><i class="fa-solid fa-trash"></i>Hapus
+                                    Foto</button>
+                            </div>
+                        </article>
+                    @empty
+                        <div
+                            class="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500 sm:col-span-2 xl:col-span-3">
+                            Pilih album lalu upload foto.</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeGalleryTab === 'video'" x-cloak class="space-y-5">
+            <div class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+                <h2 class="font-black">Tambah Video</h2>
+                <form wire:submit="saveVideo" class="mt-4 grid gap-4 lg:grid-cols-3">
+                    <x-admin.input label="Judul Video" model="videoForm.title" placeholder="opsional" />
+                    <x-admin.input label="URL YouTube" model="videoForm.video_url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+                    <x-admin.input label="Caption" model="videoForm.caption" placeholder="opsional" />
+                    <div class="lg:col-span-3">
+                        <button
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><i class="fa-brands fa-youtube"></i>Tambah
+                            Video</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+                <h2 class="font-black">Video Album</h2>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    @forelse($videos as $video)
+                        <article class="overflow-hidden rounded-lg border border-zinc-200">
+                            <div class="relative h-44 bg-zinc-900">
+                                @if ($video['thumbnail_url'])
+                                    <img src="{{ $video['thumbnail_url'] }}" alt="{{ $video['title'] }}"
+                                        class="h-full w-full object-cover opacity-80">
+                                @endif
+                                <span class="absolute inset-0 grid place-items-center text-4xl text-white">
+                                    <i class="fa-brands fa-youtube"></i>
+                                </span>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-black">{{ $video['title'] }}</h3>
+                                <p class="mt-1 line-clamp-2 text-sm text-zinc-500">{{ $video['caption'] }}</p>
+                                <a href="{{ $video['video_url'] }}" target="_blank" rel="noreferrer"
+                                    class="mt-3 inline-flex items-center gap-2 rounded bg-zinc-100 px-3 py-2 text-xs font-bold"><i class="fa-solid fa-up-right-from-square"></i>Buka
+                                    YouTube</a>
+                                <button type="button" wire:click="deleteVideo({{ $video['id'] }})"
+                                    wire:confirm="Hapus video ini?"
+                                    class="mt-3 inline-flex items-center gap-2 rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700"><i class="fa-solid fa-trash"></i>Hapus
+                                    Video</button>
+                            </div>
+                        </article>
+                    @empty
+                        <div
+                            class="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500 sm:col-span-2 xl:col-span-3">
+                            Pilih album lalu tambahkan URL YouTube.</div>
+                    @endforelse
+                </div>
             </div>
         </div>
     </section>
@@ -337,7 +568,7 @@ new class extends Component {
                     <x-admin.input label="Judul Album" model="albumForm.title" />
                     <x-admin.input label="Tanggal Album" model="albumForm.album_date" type="date" />
                     <div>
-                        <label class="text-sm font-bold">Cover Album</label>
+                        <label class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-image text-amber-600"></i>Cover Album</label>
                         <input type="file" wire:model="coverUpload" accept="image/*"
                             class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
                         @error('coverUpload')
@@ -354,9 +585,9 @@ new class extends Component {
                     <x-admin.textarea label="Deskripsi" model="albumForm.description" class="sm:col-span-2" />
                     <div class="flex justify-end gap-2 border-t border-zinc-200 pt-5 sm:col-span-2">
                         <button type="button" wire:click="closeAlbumModal"
-                            class="inline-flex min-h-11 items-center rounded-md border border-zinc-300 px-4 text-sm font-bold">Batal</button>
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md border border-zinc-300 px-4 text-sm font-bold"><i class="fa-solid fa-xmark"></i>Batal</button>
                         <button
-                            class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Simpan
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white"><i class="fa-solid fa-floppy-disk"></i>Simpan
                             Album</button>
                     </div>
                 </form>

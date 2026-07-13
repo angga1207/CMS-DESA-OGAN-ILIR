@@ -1,11 +1,85 @@
 {
     "application": "CMS Desa",
     "component": "Backend CMS",
-    "current_version": "1.5.0",
+    "current_version": "1.6.5",
     "framework": "Laravel 13",
-    "released_at": "2026-07-06",
+    "released_at": "2026-07-13",
     "description": "Panel administrasi untuk mengelola desa, konten, pengguna, tema, widget, dan integrasi data publik.",
     "releases": [
+        {
+            "version": "1.6.5",
+            "date": "2026-07-13",
+            "status": "stable",
+            "title": "Patch Styling, Shortcut Beranda, dan Posisi Widget",
+            "changes": [
+                "Memindahkan pengaturan Label dan Link di Bawah Banner menjadi modul Shortcut Beranda tersendiri.",
+                "Menambahkan preview frontend manual pada Styling Website tanpa memuat ulang frontend pada setiap perubahan warna atau theme.",
+                "Mendukung drag and drop widget antar posisi dengan tetap mengikuti aturan placement setiap jenis widget.",
+                "Mengarahkan pengguna ke tab Widget Aktif dan posisi terkait setelah widget baru berhasil dibuat."
+            ]
+        },
+        {
+            "version": "1.6.4",
+            "date": "2026-07-13",
+            "status": "stable",
+            "title": "Patch Menu Dinamis dan Konsistensi Interaksi CMS",
+            "changes": [
+                "Meningkatkan drag and drop Menu Dinamis agar Root Menu dan Submenu dapat saling dipindahkan dengan struktur satu tingkat yang konsisten.",
+                "Memperbaiki sinkronisasi nilai Tom Select pada modal Livewire, termasuk status boolean Aktif dan Nonaktif.",
+                "Mengganti konfirmasi native pada aksi delete CMS dengan SweetAlert yang tetap aktif setelah render ulang Livewire.",
+                "Menambahkan pagination terpisah pada riwayat versi Backend CMS dan Frontend Publik."
+            ]
+        },
+        {
+            "version": "1.6.3",
+            "date": "2026-07-10",
+            "status": "stable",
+            "title": "Patch Statistik Pengunjung dan Referensi Desa",
+            "changes": [
+                "Menambahkan Referensi Kategori UMKM dan Referensi Kategori BUMDES pada CMS Backend.",
+                "Mengubah captcha login menjadi 4 karakter dan mereset input captcha saat validasi captcha salah.",
+                "Membuka fitur Statistik Pengunjung untuk Admin Desa tanpa menampilkan detail teknis developer.",
+                "Menambahkan chart, download CSV, periode Tahun ini, serta penyajian data harian, mingguan, dan bulanan pada Statistik Pengunjung.",
+                "Menambahkan data dummy statistik pengunjung Desa Arisan Deras untuk kebutuhan testing."
+            ]
+        },
+        {
+            "version": "1.6.2",
+            "date": "2026-07-08",
+            "status": "stable",
+            "title": "Revisi Artikel dan Perapihan Sumber Artikel",
+            "changes": [
+                "Menambahkan riwayat revisi artikel dengan batas maksimal 3 revisi terakhir per artikel.",
+                "Menambahkan preview revisi sebelum artikel dipulihkan agar editor dapat memeriksa konten terlebih dahulu.",
+                "Menghapus master data Sumber Artikel beserta kolom sumber pada artikel dan revisi artikel.",
+                "Merapikan migration backend CMS dan memvalidasi ulang fresh migration beserta seed desa Ogan Ilir."
+            ]
+        },
+        {
+            "version": "1.6.1",
+            "date": "2026-07-08",
+            "status": "stable",
+            "title": "Galeri Foto dan Video YouTube",
+            "changes": [
+                "Menambahkan dukungan video YouTube per album galeri agar album dapat berisi foto saja, video saja, atau kombinasi keduanya.",
+                "Merapikan input Gallery di CMS menjadi tab Foto dan Video agar pengelolaan media album tidak menumpuk.",
+                "Menambahkan payload videos dan media gabungan pada public site untuk kebutuhan tampilan galeri publik.",
+                "Menjaga perubahan album, foto, dan video galeri tetap menginvalidasi cache website publik."
+            ]
+        },
+        {
+            "version": "1.6.0",
+            "date": "2026-07-07",
+            "status": "stable",
+            "title": "Redesign CMS, SIDESI Seeder, dan Tabel Peta Sebaran",
+            "changes": [
+                "Meredesign tampilan module CMS Backend agar index, create, dan edit lebih modern serta mudah digunakan.",
+                "Menambahkan ikon pada navigasi, header, form, tombol aksi, dan module CMS agar panel admin lebih mudah dipindai.",
+                "Menambahkan seeder desa Ogan Ilir dari endpoint SIDESI beserta provisioning otomatis Admin Desa dan Editor Desa.",
+                "Menampilkan data Peta Sebaran SIDESI pada CMS dalam bentuk tabel fasilitas dan bantuan dengan kategori, pencarian, dan pagination.",
+                "Menjaga data Peta Sebaran tetap dibaca dari SIDESI/cache backend tanpa membuat tabel lokal baru."
+            ]
+        },
         {
             "version": "1.5.0",
             "date": "2026-07-06",

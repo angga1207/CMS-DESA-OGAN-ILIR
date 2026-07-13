@@ -120,6 +120,7 @@ new class extends Component {
     {
         $type = (string) ($this->form['widget_type'] ?? '');
         $definition = WidgetCatalog::get($type);
+        $isNewWidget = empty($this->form['id']);
         $this->fillWeatherAdm4();
 
         $this->validate(
@@ -162,9 +163,18 @@ new class extends Component {
 
         $this->forgetPublicCache();
 
+        $savedPlacement = (string) $this->form['placement'];
         $this->closeModal();
-        $this->loadData();
         $this->activeTab = 'active';
+
+        if ($isNewWidget) {
+            $this->search = '';
+            $this->statusFilter = '';
+            $this->typeFilter = '';
+            $this->activePlacementTab = $savedPlacement;
+        }
+
+        $this->loadData();
         LivewireAlert::title('Tersimpan')->text('Widget berhasil disimpan.')->success()->timer(1200)->show();
     }
 
@@ -198,13 +208,70 @@ new class extends Component {
         LivewireAlert::title('Terhapus')->text('Widget berhasil dihapus.')->success()->timer(1200)->show();
     }
 
-    public function reorderWidgets(string $placement, array $orderedIds): void
+    public function reorderWidgets(
+        string $placement,
+        array $orderedIds,
+        ?int $movedId = null,
+        ?string $sourcePlacement = null,
+    ): void
     {
         if (!array_key_exists($placement, WidgetCatalog::placements())) {
             return;
         }
 
         $orderedIds = array_values(array_unique(array_map('intval', $orderedIds)));
+        $sourcePlacement = $sourcePlacement && array_key_exists($sourcePlacement, WidgetCatalog::placements())
+            ? $sourcePlacement
+            : null;
+
+        DB::transaction(function () use ($placement, $orderedIds, $movedId, $sourcePlacement): void {
+            $actualSourcePlacement = null;
+
+            if ($movedId) {
+                $widget = DB::table('village_widgets')
+                    ->where('village_id', $this->villageId)
+                    ->where('id', $movedId)
+                    ->whereIn('widget_type', array_keys($this->catalog))
+                    ->first();
+
+                if (! $widget) {
+                    return;
+                }
+
+                $actualSourcePlacement = (string) $widget->placement;
+
+                if ($sourcePlacement && $sourcePlacement !== $actualSourcePlacement) {
+                    return;
+                }
+
+                if ($actualSourcePlacement !== $placement) {
+                    if (! in_array($placement, WidgetCatalog::allowedPlacements($widget->widget_type), true)) {
+                        return;
+                    }
+
+                    DB::table('village_widgets')
+                        ->where('village_id', $this->villageId)
+                        ->where('id', $movedId)
+                        ->update([
+                            'placement' => $placement,
+                            'updated_at' => now(),
+                        ]);
+                }
+            }
+
+            $this->normalizeWidgetOrder($placement, $orderedIds);
+
+            if ($actualSourcePlacement && $actualSourcePlacement !== $placement) {
+                $this->normalizeWidgetOrder($actualSourcePlacement);
+            }
+        });
+
+        $this->forgetPublicCache();
+        $this->loadData();
+    }
+
+    private function normalizeWidgetOrder(string $placement, array $orderedIds = []): void
+    {
         $currentIds = DB::table('village_widgets')
             ->where('village_id', $this->villageId)
             ->where('placement', $placement)
@@ -225,9 +292,6 @@ new class extends Component {
                 ->where('id', $id)
                 ->update(['sort_order' => $index + 1, 'updated_at' => now()]);
         }
-
-        $this->forgetPublicCache();
-        $this->loadData();
     }
 
     public function closeModal(): void
@@ -365,11 +429,11 @@ new class extends Component {
 ?>
 
 <div class="space-y-6">
-    <div class="rounded-lg border border-zinc-200 bg-white p-1 shadow-sm">
+    <div class="admin-panel border bg-white p-1">
         <div class="grid gap-1 sm:grid-cols-2" role="tablist" aria-label="Tab widget website">
             <button type="button" wire:click="$set('activeTab', 'available')" @class([
                 'flex min-h-12 items-center justify-center gap-2 rounded-md px-4 text-sm font-black transition',
-                'bg-emerald-600 text-white shadow-sm' => $activeTab === 'available',
+                'bg-emerald-700 text-white shadow-sm' => $activeTab === 'available',
                 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950' =>
                     $activeTab !== 'available',
             ]) role="tab"
@@ -384,7 +448,7 @@ new class extends Component {
             </button>
             <button type="button" wire:click="$set('activeTab', 'active')" @class([
                 'flex min-h-12 items-center justify-center gap-2 rounded-md px-4 text-sm font-black transition',
-                'bg-emerald-600 text-white shadow-sm' => $activeTab === 'active',
+                'bg-emerald-700 text-white shadow-sm' => $activeTab === 'active',
                 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950' =>
                     $activeTab !== 'active',
             ]) role="tab"
@@ -408,7 +472,7 @@ new class extends Component {
                     <p class="text-sm text-zinc-500">Pilih widget yang ingin dipasang pada website desa.</p>
                 </div>
                 <button type="button" wire:click="create"
-                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white">
+                    class="admin-btn-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-black text-white">
                     <i class="fa-solid fa-plus"></i>
                     Tambah Widget
                 </button>
@@ -420,7 +484,7 @@ new class extends Component {
 
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 @forelse($this->filteredCatalog() as $type => $widget)
-                    <article class="flex min-h-40 flex-col rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+                    <article class="admin-panel flex min-h-40 flex-col border bg-white p-4">
                         <div class="flex items-start gap-3">
                             <div
                                 class="grid size-11 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-700">
@@ -445,9 +509,9 @@ new class extends Component {
             </div>
         </section>
     @elseif($activeTab === 'active')
-        <section class="rounded-lg border border-zinc-200 bg-white shadow-sm" role="tabpanel">
-            <div class="border-b border-zinc-200 p-5">
-                <h2 class="font-black">Widget Terpasang</h2>
+        <section class="admin-panel overflow-hidden border bg-white" role="tabpanel">
+            <div class="admin-panel-header border-b p-5">
+                <h2 class="flex items-center gap-2 font-black text-emerald-950"><i class="fa-solid fa-puzzle-piece text-amber-600"></i>Widget Terpasang</h2>
                 <p class="text-sm text-zinc-500">Pilih tab posisi, lalu geser widget untuk mengatur urutannya.</p>
             </div>
             <div class="grid gap-3 border-b border-zinc-200 p-5 md:grid-cols-2 xl:grid-cols-4">
@@ -517,17 +581,18 @@ new class extends Component {
                                         </p>
                                     </div>
                                 </div>
-                                @if ($widgets->isEmpty())
-                                    <div
-                                        class="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center text-sm font-semibold text-zinc-500">
-                                        Belum ada widget pada posisi ini.
-                                    </div>
-                                @else
-                                    <div class="space-y-3" data-widget-sortable
-                                        data-widget-placement="{{ $placement }}">
+                                <div class="min-h-20 space-y-3 rounded-lg border border-dashed border-transparent transition data-[drag-over=true]:border-emerald-400 data-[drag-over=true]:bg-emerald-50/60"
+                                    data-widget-sortable data-widget-placement="{{ $placement }}">
+                                    @if ($widgets->isEmpty())
+                                        <div data-widget-empty
+                                            class="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center text-sm font-semibold text-zinc-500">
+                                            Tarik widget yang mendukung posisi ini ke sini.
+                                        </div>
+                                    @endif
                                         @foreach ($widgets as $row)
                                             <div draggable="true" data-widget-item-id="{{ $row['id'] }}"
                                                 data-widget-placement="{{ $placement }}"
+                                                data-widget-placements='@json(WidgetCatalog::allowedPlacements($row['widget_type']))'
                                                 class="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-4 transition data-[dragging=true]:opacity-50 lg:flex-row lg:items-center">
                                                 <div class="flex min-w-0 flex-1 items-start gap-3">
                                                     <button type="button"
@@ -572,8 +637,7 @@ new class extends Component {
                                                 </div>
                                             </div>
                                         @endforeach
-                                    </div>
-                                @endif
+                                </div>
                             </section>
                         @endif
                     @endforeach
@@ -584,16 +648,16 @@ new class extends Component {
 
     @if ($showModal)
         <div x-data @click.self="$wire.closeModal()" @keydown.escape.window="$wire.closeModal()"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-4" role="dialog"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm" role="dialog"
             aria-modal="true">
-            <div class="max-h-[90dvh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-2xl">
-                <div class="flex items-center justify-between border-b border-zinc-200 p-5">
+            <div class="admin-panel max-h-[90dvh] w-full max-w-3xl overflow-y-auto border bg-white shadow-2xl">
+                <div class="admin-panel-header flex items-center justify-between border-b p-5">
                     <div>
-                        <h3 class="text-lg font-black">{{ $form['id'] ? 'Edit Widget' : 'Pasang Widget' }}</h3>
+                        <h3 class="text-lg font-black text-emerald-950">{{ $form['id'] ? 'Edit Widget' : 'Pasang Widget' }}</h3>
                         <p class="text-sm text-zinc-500">Konfigurasi widget untuk website desa aktif.</p>
                     </div>
                     <button type="button" wire:click="closeModal"
-                        class="grid size-11 place-items-center rounded-md border border-zinc-300"
+                        class="grid size-11 place-items-center rounded-md border border-emerald-950/15"
                         aria-label="Tutup modal">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
@@ -607,7 +671,7 @@ new class extends Component {
                         <x-admin.select label="Posisi" model="form.placement" :options="$placementOptions" />
                     @else
                         <div>
-                            <label class="text-sm font-bold text-zinc-500">Posisi</label>
+                            <label class="admin-field-label text-zinc-500">Posisi</label>
                             <div
                                 class="mt-1 flex min-h-11 items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-400">
                                 Pilih jenis widget terlebih dahulu</div>
@@ -641,11 +705,11 @@ new class extends Component {
                         @endforeach
                     @endif
 
-                    <div class="flex justify-end gap-2 border-t border-zinc-200 pt-5 sm:col-span-2">
+                    <div class="flex justify-end gap-2 border-t border-emerald-950/10 pt-5 sm:col-span-2">
                         <button type="button" wire:click="closeModal"
-                            class="inline-flex min-h-11 items-center rounded-md border border-zinc-300 px-4 text-sm font-bold">Batal</button>
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md border border-emerald-950/15 px-4 text-sm font-bold"><i class="fa-solid fa-xmark"></i>Batal</button>
                         <button type="submit"
-                            class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Simpan
+                            class="admin-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-sm font-black text-white"><i class="fa-solid fa-floppy-disk"></i>Simpan
                             Widget</button>
                     </div>
                 </form>

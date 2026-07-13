@@ -330,13 +330,15 @@ new class extends Component
             ['title' => 'Anggaran', 'subtitle' => 'Transparansi APBDes dari SIDESI', 'href' => route('admin.module', 'budgets'), 'icon' => 'fa-chart-pie', 'feature' => 'budgets', 'roles' => ['developer', 'admin_desa', 'editor']],
             ['title' => 'Statistik', 'subtitle' => 'Data penduduk, usia, pendidikan, dan pekerjaan', 'href' => route('admin.module', 'demographics'), 'icon' => 'fa-chart-column', 'feature' => 'statistics', 'roles' => ['developer', 'admin_desa', 'editor']],
             ['title' => 'Kategori Berita', 'subtitle' => 'Referensi kategori artikel', 'href' => route('admin.references.index', 'content-categories'), 'icon' => 'fa-tags', 'feature' => 'articles', 'roles' => ['developer', 'admin_desa', 'editor']],
-            ['title' => 'Sumber Artikel', 'subtitle' => 'Referensi sumber artikel', 'href' => route('admin.references.index', 'content-sources'), 'icon' => 'fa-building-columns', 'feature' => 'articles', 'roles' => ['developer', 'admin_desa', 'editor']],
+            ['title' => 'Kategori UMKM', 'subtitle' => 'Referensi kategori usaha desa', 'href' => route('admin.references.index', 'business-categories'), 'icon' => 'fa-store', 'feature' => 'businesses', 'roles' => ['developer', 'admin_desa', 'editor']],
+            ['title' => 'Kategori BUMDES', 'subtitle' => 'Referensi kategori badan usaha milik desa', 'href' => route('admin.references.index', 'bumdes-categories'), 'icon' => 'fa-building-user', 'feature' => 'bumdes', 'roles' => ['developer', 'admin_desa', 'editor']],
             ['title' => 'Pengaturan Desa', 'subtitle' => 'Identitas dan informasi dasar desa', 'href' => route('admin.settings.index'), 'icon' => 'fa-gear', 'roles' => ['developer', 'admin_desa']],
-            ['title' => 'Styling Website', 'subtitle' => 'Theme, warna, font, dan shortcut beranda', 'href' => route('admin.styling.index'), 'icon' => 'fa-palette', 'roles' => ['developer', 'admin_desa']],
+            ['title' => 'Styling Website', 'subtitle' => 'Theme, warna, font, dan preview frontend', 'href' => route('admin.styling.index'), 'icon' => 'fa-palette', 'roles' => ['developer', 'admin_desa']],
+            ['title' => 'Shortcut Beranda', 'subtitle' => 'Label dan link cepat di bawah banner', 'href' => route('admin.home-shortcuts.index'), 'icon' => 'fa-link', 'roles' => ['developer', 'admin_desa']],
             ['title' => 'Pengguna', 'subtitle' => 'Role dan akun CMS desa', 'href' => route('admin.users.index'), 'icon' => 'fa-users-gear', 'roles' => ['developer', 'admin_desa']],
             ['title' => 'Versi Aplikasi', 'subtitle' => 'Metadata versi backend dan frontend', 'href' => route('admin.application-versions.index'), 'icon' => 'fa-code-branch', 'roles' => ['developer', 'admin_desa']],
             ['title' => 'Manajemen Desa', 'subtitle' => 'Kelola daftar desa', 'href' => route('admin.villages.index'), 'icon' => 'fa-city', 'roles' => ['developer']],
-            ['title' => 'Statistik Pengunjung', 'subtitle' => 'Analitik kunjungan website publik', 'href' => route('admin.visitor-statistics.index'), 'icon' => 'fa-chart-line', 'roles' => ['developer']],
+            ['title' => 'Statistik Pengunjung', 'subtitle' => 'Analitik kunjungan website publik', 'href' => route('admin.visitor-statistics.index'), 'icon' => 'fa-chart-line', 'roles' => ['developer', 'admin_desa']],
         ];
     }
 

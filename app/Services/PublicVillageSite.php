@@ -171,11 +171,28 @@ final class PublicVillageSite
     private function galleries(int $villageId): array
     {
         $photos = DB::table('gallery_photos')->where('village_id', $villageId)->orderBy('sort_order')->get()->groupBy('album_id');
+        $videos = DB::table('gallery_videos')->where('village_id', $villageId)->orderBy('sort_order')->get()->groupBy('album_id');
 
         return DB::table('gallery_albums')->where('village_id', $villageId)->orderByDesc('album_date')->get()
-            ->map(function (object $album) use ($photos): array {
+            ->map(function (object $album) use ($photos, $videos): array {
                 $row = (array) $album;
-                $row['photos'] = $photos->get($album->id, collect())->map(fn (object $photo): array => (array) $photo)->values()->all();
+                $albumPhotos = $photos->get($album->id, collect())
+                    ->map(fn (object $photo): array => [...(array) $photo, 'type' => 'photo'])
+                    ->values();
+                $albumVideos = $videos->get($album->id, collect())
+                    ->map(fn (object $video): array => [...(array) $video, 'type' => 'video'])
+                    ->values();
+
+                $row['photos'] = $albumPhotos->map(fn (array $photo): array => collect($photo)->except('type')->all())->all();
+                $row['videos'] = $albumVideos->map(fn (array $video): array => collect($video)->except('type')->all())->all();
+                $row['media'] = $albumPhotos
+                    ->merge($albumVideos)
+                    ->sortBy([
+                        ['sort_order', 'asc'],
+                        ['created_at', 'asc'],
+                    ])
+                    ->values()
+                    ->all();
 
                 return $row;
             })->all();

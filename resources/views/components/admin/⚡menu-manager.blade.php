@@ -47,12 +47,9 @@ new class extends Component {
     public function edit(int $id): void
     {
         $this->resetValidation();
-        $row = DB::table('navigation_items')
-            ->where('village_id', $this->villageId)
-            ->where('id', $id)
-            ->first();
+        $row = DB::table('navigation_items')->where('village_id', $this->villageId)->where('id', $id)->first();
 
-        if (! $row) {
+        if (!$row) {
             return;
         }
 
@@ -92,9 +89,7 @@ new class extends Component {
 
         $itemId = $this->form['id'] ?? null;
         $parentId = $this->form['parent_id'] ?: null;
-        $currentParentId = $itemId
-            ? DB::table('navigation_items')->where('village_id', $this->villageId)->where('id', $itemId)->value('parent_id')
-            : null;
+        $currentParentId = $itemId ? DB::table('navigation_items')->where('village_id', $this->villageId)->where('id', $itemId)->value('parent_id') : null;
         $payload = [
             'menu_id' => $this->publicMenuId(),
             'village_id' => $this->villageId,
@@ -104,18 +99,13 @@ new class extends Component {
             'type' => $this->form['type'],
             'url' => $this->form['type'] === 'url' ? $this->form['url'] : null,
             'target' => $this->form['target'] ?: '_self',
-            'sort_order' => $itemId && (int) $currentParentId === (int) $parentId
-                ? (int) ($this->form['sort_order'] ?? 0)
-                : $this->nextMenuSortOrder($parentId),
+            'sort_order' => $itemId && (int) $currentParentId === (int) $parentId ? (int) ($this->form['sort_order'] ?? 0) : $this->nextMenuSortOrder($parentId),
             'is_active' => (bool) $this->form['is_active'],
             'updated_at' => now(),
         ];
 
         if ($itemId) {
-            DB::table('navigation_items')
-                ->where('village_id', $this->villageId)
-                ->where('id', $itemId)
-                ->update($payload);
+            DB::table('navigation_items')->where('village_id', $this->villageId)->where('id', $itemId)->update($payload);
         } else {
             DB::table('navigation_items')->insert([...$payload, 'created_at' => now()]);
         }
@@ -130,10 +120,7 @@ new class extends Component {
 
     public function delete(int $id): void
     {
-        DB::table('navigation_items')
-            ->where('village_id', $this->villageId)
-            ->where('id', $id)
-            ->delete();
+        DB::table('navigation_items')->where('village_id', $this->villageId)->where('id', $id)->delete();
 
         PublicSiteCache::forget($this->villageId);
         $this->loadData();
@@ -146,29 +133,46 @@ new class extends Component {
         $sourceParentId = $sourceParentId ?: null;
 
         DB::transaction(function () use ($menuId, $parentId, $orderedIds, $movedId, $sourceParentId): void {
-            if ($movedId && $parentId !== null) {
-                $movedItem = DB::table('navigation_items')
-                    ->where('village_id', $this->villageId)
-                    ->where('menu_id', $menuId)
-                    ->where('id', $movedId)
-                    ->first();
+            if ($movedId) {
+                $movedItem = DB::table('navigation_items')->where('village_id', $this->villageId)->where('menu_id', $menuId)->where('id', $movedId)->first();
 
-                $targetParentExists = DB::table('navigation_items')
-                    ->where('village_id', $this->villageId)
-                    ->where('menu_id', $menuId)
-                    ->where('id', $parentId)
-                    ->whereNull('parent_id')
-                    ->exists();
-
-                if (! $movedItem || ! $movedItem->parent_id || ! $targetParentExists || (int) $movedItem->id === $parentId) {
+                if (!$movedItem) {
                     return;
                 }
 
-                DB::table('navigation_items')
-                    ->where('village_id', $this->villageId)
-                    ->where('menu_id', $menuId)
-                    ->where('id', $movedId)
-                    ->update(['parent_id' => $parentId, 'updated_at' => now()]);
+                $childIds = [];
+
+                if ($parentId !== null) {
+                    $targetParentExists = DB::table('navigation_items')->where('village_id', $this->villageId)->where('menu_id', $menuId)->where('id', $parentId)->whereNull('parent_id')->exists();
+
+                    if (!$targetParentExists || (int) $movedItem->id === $parentId) {
+                        return;
+                    }
+
+                    if ($movedItem->parent_id === null) {
+                        $childIds = DB::table('navigation_items')->where('village_id', $this->villageId)->where('menu_id', $menuId)->where('parent_id', $movedId)->orderBy('sort_order')->orderBy('id')->pluck('id')->map(fn($id): int => (int) $id)->all();
+                    }
+
+                    if ($childIds !== []) {
+                        DB::table('navigation_items')
+                            ->where('village_id', $this->villageId)
+                            ->where('menu_id', $menuId)
+                            ->whereIn('id', $childIds)
+                            ->update(['parent_id' => $parentId, 'updated_at' => now()]);
+
+                        $orderedIds = collect($orderedIds)->flatMap(fn($id): array => (int) $id === $movedId ? [$movedId, ...$childIds] : [(int) $id])->all();
+                    }
+                }
+
+                if ((int) ($movedItem->parent_id ?? 0) !== (int) ($parentId ?? 0)) {
+                    $orderedIds = collect($orderedIds)->map(fn($id): int => (int) $id)->all();
+
+                    DB::table('navigation_items')
+                        ->where('village_id', $this->villageId)
+                        ->where('menu_id', $menuId)
+                        ->where('id', $movedId)
+                        ->update(['parent_id' => $parentId, 'updated_at' => now()]);
+                }
             }
 
             $this->normalizeMenuOrder($menuId, $parentId, $orderedIds);
@@ -186,12 +190,7 @@ new class extends Component {
     {
         $menuId = $this->publicMenuId();
 
-        $this->pages = DB::table('pages')
-            ->where('village_id', $this->villageId)
-            ->orderBy('title')
-            ->get()
-            ->map(fn ($row): array => (array) $row)
-            ->all();
+        $this->pages = DB::table('pages')->where('village_id', $this->villageId)->orderBy('title')->get()->map(fn($row): array => (array) $row)->all();
 
         $this->rows = DB::table('navigation_items')
             ->leftJoin('navigation_items as parents', 'navigation_items.parent_id', '=', 'parents.id')
@@ -201,7 +200,7 @@ new class extends Component {
             ->orderBy('navigation_items.parent_id')
             ->orderBy('navigation_items.sort_order')
             ->get(['navigation_items.*', 'parents.label as parent_label', 'pages.title as page_title'])
-            ->map(fn ($row): array => (array) $row)
+            ->map(fn($row): array => (array) $row)
             ->all();
 
         $this->parentMenuOptions = collect($this->rows)->whereNull('parent_id')->values()->all();
@@ -227,15 +226,7 @@ new class extends Component {
         $parentId = $parentId ?: null;
         $orderedIds = array_values(array_unique(array_map('intval', $orderedIds)));
 
-        $currentIds = DB::table('navigation_items')
-            ->where('village_id', $this->villageId)
-            ->where('menu_id', $menuId)
-            ->where('parent_id', $parentId)
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->pluck('id')
-            ->map(fn ($id): int => (int) $id)
-            ->all();
+        $currentIds = DB::table('navigation_items')->where('village_id', $this->villageId)->where('menu_id', $menuId)->where('parent_id', $parentId)->orderBy('sort_order')->orderBy('id')->pluck('id')->map(fn($id): int => (int) $id)->all();
 
         $validIds = array_values(array_intersect($orderedIds, $currentIds));
         $remainingIds = array_values(array_diff($currentIds, $validIds));
@@ -252,55 +243,45 @@ new class extends Component {
 
     private function nextMenuSortOrder(?int $parentId): int
     {
-        return ((int) DB::table('navigation_items')
-            ->where('village_id', $this->villageId)
-            ->where('menu_id', $this->publicMenuId())
-            ->where('parent_id', $parentId)
-            ->max('sort_order')) + 1;
+        return ((int) DB::table('navigation_items')->where('village_id', $this->villageId)->where('menu_id', $this->publicMenuId())->where('parent_id', $parentId)->max('sort_order')) + 1;
     }
 
     private function publicMenuId(): int
     {
-        return (int) (DB::table('navigation_menus')
-            ->where('village_id', $this->villageId)
-            ->where('location', 'public')
-            ->value('id') ?: DB::table('navigation_menus')->insertGetId([
-                'village_id' => $this->villageId,
-                'name' => 'Navbar Publik',
-                'location' => 'public',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]));
+        return (int) (DB::table('navigation_menus')->where('village_id', $this->villageId)->where('location', 'public')->value('id') ?:
+        DB::table('navigation_menus')->insertGetId([
+            'village_id' => $this->villageId,
+            'name' => 'Navbar Publik',
+            'location' => 'public',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]));
     }
 
     private function validParentId(int $parentId): bool
     {
-        return DB::table('navigation_items')
-            ->where('village_id', $this->villageId)
-            ->where('menu_id', $this->publicMenuId())
-            ->where('id', $parentId)
-            ->whereNull('parent_id')
-            ->exists();
+        return DB::table('navigation_items')->where('village_id', $this->villageId)->where('menu_id', $this->publicMenuId())->where('id', $parentId)->whereNull('parent_id')->exists();
     }
 };
 ?>
 
 <div class="space-y-5">
-    <section class="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div class="flex flex-col gap-3 border-b border-zinc-200 p-5 sm:flex-row sm:items-center sm:justify-between">
+    <section class="admin-panel overflow-hidden border bg-white">
+        <div class="admin-panel-header flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h2 class="font-black">{{ $title }}</h2>
+                <h2 class="flex items-center gap-2 font-black text-emerald-950"><i
+                        class="fa-solid fa-bars-staggered text-amber-600"></i>{{ $title }}</h2>
                 <p class="text-sm text-zinc-500">Susun menu utama dan submenu sesuai urutan navigasi.</p>
             </div>
             <button type="button" wire:click="create"
-                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white">
+                class="admin-btn-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-black text-white">
                 <i class="fa-solid fa-plus"></i>
                 Tambah Menu
             </button>
         </div>
 
         @php($mainMenus = collect($rows)->whereNull('parent_id')->sortBy('sort_order'))
-        <div class="space-y-3 bg-zinc-50 p-5" data-menu-sortable data-menu-level="main" data-parent-id="">
+        <div class="space-y-3 bg-[#f4f7f1] p-5" data-menu-sortable data-menu-level="main" data-parent-id="">
             @forelse($mainMenus as $mainMenu)
                 @php($children = collect($rows)->where('parent_id', $mainMenu['id'])->sortBy('sort_order'))
                 <article draggable="true" data-menu-item-id="{{ $mainMenu['id'] }}" data-menu-level="main"
@@ -345,8 +326,8 @@ new class extends Component {
                     </div>
 
                     <div class="border-t border-zinc-200 bg-zinc-50/70 px-4 py-3">
-                        <div class="ml-5 min-h-11 space-y-2 border-l-2 border-emerald-200 pl-4"
-                            data-menu-sortable data-menu-level="submenu" data-parent-id="{{ $mainMenu['id'] }}">
+                        <div class="ml-5 min-h-11 space-y-2 border-l-2 border-emerald-200 pl-4" data-menu-sortable
+                            data-menu-level="submenu" data-parent-id="{{ $mainMenu['id'] }}">
                             @if ($children->isEmpty())
                                 <div
                                     class="flex flex-col gap-2 rounded-md border border-dashed border-zinc-300 bg-white/70 px-3 py-3 text-xs font-bold text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
@@ -358,8 +339,8 @@ new class extends Component {
                                 </div>
                             @endif
                             @foreach ($children as $child)
-                                <div draggable="true" data-menu-item-id="{{ $child['id'] }}"
-                                    data-menu-level="submenu" data-menu-parent-id="{{ $mainMenu['id'] }}"
+                                <div draggable="true" data-menu-item-id="{{ $child['id'] }}" data-menu-level="submenu"
+                                    data-menu-parent-id="{{ $mainMenu['id'] }}"
                                     class="flex flex-col gap-3 rounded-md border border-zinc-200 bg-white p-3 transition data-[dragging=true]:opacity-50 sm:flex-row sm:items-center sm:justify-between">
                                     <div class="flex min-w-0 items-center gap-3">
                                         <button type="button"
@@ -405,30 +386,33 @@ new class extends Component {
 
     @if ($showModal)
         <div x-data @click.self="$wire.closeModal()" @keydown.escape.window="$wire.closeModal()"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-4" role="dialog"
-            aria-modal="true">
-            <div class="max-h-[90dvh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-2xl">
-                <div class="flex items-center justify-between border-b border-zinc-200 p-5">
+            class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
+            role="dialog" aria-modal="true">
+            <div class="admin-panel max-h-[90dvh] w-full max-w-4xl overflow-y-auto border bg-white shadow-2xl">
+                <div class="admin-panel-header flex items-center justify-between border-b p-5">
                     <div>
-                        <h3 class="text-lg font-black">{{ $form['id'] ? 'Edit' : 'Tambah' }} {{ $title }}</h3>
+                        <h3 class="text-lg font-black text-emerald-950">{{ $form['id'] ? 'Edit' : 'Tambah' }}
+                            {{ $title }}</h3>
                         <p class="text-sm text-zinc-500">Isi data lalu simpan perubahan.</p>
                     </div>
                     <button type="button" wire:click="closeModal"
-                        class="grid size-11 place-items-center rounded-md border border-zinc-300"
+                        class="grid size-11 place-items-center rounded-md border border-emerald-950/15"
                         aria-label="Tutup modal">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
                 <form wire:submit="save" class="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-                    <div class="rounded-md border border-zinc-200 bg-zinc-50 p-4 sm:col-span-2 lg:col-span-3">
+                    <div class="rounded-xl border border-emerald-950/10 bg-[#f4f7f1] p-4 sm:col-span-2 lg:col-span-3">
                         <div class="flex items-start gap-3">
-                            <div class="grid size-10 shrink-0 place-items-center rounded-md bg-emerald-100 text-emerald-700">
+                            <div
+                                class="grid size-10 shrink-0 place-items-center rounded-md bg-emerald-100 text-emerald-700">
                                 <i class="fa-solid {{ $form['parent_id'] ? 'fa-turn-up rotate-90' : 'fa-bars' }}"></i>
                             </div>
                             <div>
                                 <div class="font-black">{{ $form['parent_id'] ? 'Submenu' : 'Menu Utama' }}</div>
-                                <p class="mt-1 text-sm text-zinc-500">Pilih menu induk jika item ini ingin ditampilkan sebagai submenu.</p>
+                                <p class="mt-1 text-sm text-zinc-500">Pilih menu induk jika item ini ingin ditampilkan
+                                    sebagai submenu.</p>
                             </div>
                         </div>
                     </div>
@@ -440,7 +424,7 @@ new class extends Component {
                         ->prepend('Tidak ada - jadikan menu utama', '')
                         ->all()"
                         class="lg:col-span-2" />
-                    <x-admin.select label="Status" model="form.is_active" :options="[1 => 'Aktif', 0 => 'Nonaktif']" />
+                    <x-admin.select label="Status" model="form.is_active" :options="[1 => 'Aktif', 0 => 'Nonaktif']"/>
                     <x-admin.select label="Jenis Tujuan" model="form.type" :options="['url' => 'URL / Tautan', 'page' => 'Halaman Khusus']" />
 
                     @if ($form['type'] === 'page')
@@ -453,11 +437,14 @@ new class extends Component {
 
                     <x-admin.select label="Buka Tautan" model="form.target" :options="['_self' => 'Di tab yang sama', '_blank' => 'Di tab baru']" />
 
-                    <div class="flex justify-end gap-2 border-t border-zinc-200 pt-5 sm:col-span-2 lg:col-span-3">
+                    <div
+                        class="flex justify-end gap-2 border-t border-emerald-950/10 pt-5 sm:col-span-2 lg:col-span-3">
                         <button type="button" wire:click="closeModal"
-                            class="inline-flex min-h-11 items-center rounded-md border border-zinc-300 px-4 text-sm font-bold">Batal</button>
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md border border-emerald-950/15 px-4 text-sm font-bold"><i
+                                class="fa-solid fa-xmark"></i>Batal</button>
                         <button type="submit"
-                            class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-5 text-sm font-black text-white">Simpan</button>
+                            class="admin-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-5 text-sm font-black text-white"><i
+                                class="fa-solid fa-floppy-disk"></i>Simpan</button>
                     </div>
                 </form>
             </div>

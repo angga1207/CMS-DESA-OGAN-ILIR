@@ -167,10 +167,10 @@ new class extends Component {
         $photo = DB::table($this->photoTable())
             ->where('village_id', $this->villageId)
             ->where('id', $id)
-            ->when($this->form['id'] ?? null, fn ($query, $businessId) => $query->where($this->photoForeignKey(), $businessId))
+            ->when($this->form['id'] ?? null, fn($query, $businessId) => $query->where($this->photoForeignKey(), $businessId))
             ->first();
 
-        if (! $photo) {
+        if (!$photo) {
             return;
         }
 
@@ -228,7 +228,7 @@ new class extends Component {
             $this->rows = $query->orderByDesc('year')->forPage($this->page, $this->perPage)->get()->map(fn($row): array => (array) $row)->all();
         } elseif ($this->module === 'files') {
             $this->title = 'Unduhan Berkas';
-            $this->columns = ['title' => 'Judul', 'file_url' => 'URL', 'published_at' => 'Tanggal'];
+            $this->columns = ['title' => 'Judul', 'file_url' => 'Berkas', 'published_at' => 'Tanggal Publish'];
             $query = DB::table('downloadable_files')->where('village_id', $this->villageId);
             $this->applySearch($query, ['title', 'slug', 'description', 'file_url', 'published_at']);
             $this->totalRows = (clone $query)->count();
@@ -257,10 +257,10 @@ new class extends Component {
             return;
         }
 
-        $search = '%'.strtolower(trim($this->search)).'%';
+        $search = '%' . strtolower(trim($this->search)) . '%';
         $query->where(function ($query) use ($columns, $search): void {
             foreach ($columns as $column) {
-                $query->orWhereRaw('LOWER(COALESCE('.$this->searchExpression($column).", '')) LIKE ?", [$search]);
+                $query->orWhereRaw('LOWER(COALESCE(' . $this->searchExpression($column) . ", '')) LIKE ?", [$search]);
             }
         });
     }
@@ -555,14 +555,7 @@ new class extends Component {
 
     private function loadBusinessPhotos(int $businessId): void
     {
-        $this->businessPhotos = DB::table($this->photoTable())
-            ->where('village_id', $this->villageId)
-            ->where($this->photoForeignKey(), $businessId)
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->get()
-            ->map(fn ($row): array => (array) $row)
-            ->all();
+        $this->businessPhotos = DB::table($this->photoTable())->where('village_id', $this->villageId)->where($this->photoForeignKey(), $businessId)->orderBy('sort_order')->orderBy('id')->get()->map(fn($row): array => (array) $row)->all();
     }
 
     private function storeBusinessPhotos(int $businessId): void
@@ -572,10 +565,7 @@ new class extends Component {
         }
 
         $storage = app(OptimizedImageStorage::class);
-        $sortOrder = (int) DB::table($this->photoTable())
-            ->where('village_id', $this->villageId)
-            ->where($this->photoForeignKey(), $businessId)
-            ->max('sort_order');
+        $sortOrder = (int) DB::table($this->photoTable())->where('village_id', $this->villageId)->where($this->photoForeignKey(), $businessId)->max('sort_order');
 
         foreach ($this->businessPhotoUploads as $upload) {
             $sortOrder++;
@@ -592,19 +582,13 @@ new class extends Component {
 
     private function deleteBusinessPhotos(int $businessId): void
     {
-        $photos = DB::table($this->photoTable())
-            ->where('village_id', $this->villageId)
-            ->where($this->photoForeignKey(), $businessId)
-            ->get();
+        $photos = DB::table($this->photoTable())->where('village_id', $this->villageId)->where($this->photoForeignKey(), $businessId)->get();
 
         foreach ($photos as $photo) {
             app(OptimizedImageStorage::class)->delete($photo->image_url);
         }
 
-        DB::table($this->photoTable())
-            ->where('village_id', $this->villageId)
-            ->where($this->photoForeignKey(), $businessId)
-            ->delete();
+        DB::table($this->photoTable())->where('village_id', $this->villageId)->where($this->photoForeignKey(), $businessId)->delete();
     }
 
     private function photoTable(): string
@@ -706,142 +690,181 @@ new class extends Component {
 };
 ?>
 
+@php
+    $moduleIcon =
+        [
+            'officials' => 'fa-id-badge',
+            'businesses' => 'fa-store',
+            'bumdes' => 'fa-building-user',
+            'projects' => 'fa-person-digging',
+            'files' => 'fa-download',
+            'maps' => 'fa-map-location-dot',
+            'budgets' => 'fa-chart-pie',
+            'demographics' => 'fa-chart-column',
+            'desa-cantik' => 'fa-chart-simple',
+        ][$module] ?? 'fa-layer-group';
+@endphp
+
 <div class="space-y-5">
-    <section class="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div class="flex flex-col gap-3 border-b border-zinc-200 p-5 sm:flex-row sm:items-center sm:justify-between">
+    <section class="admin-panel overflow-hidden border bg-white">
+        <div class="admin-panel-header flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h2 class="font-black">{{ $title }}</h2>
+                <h2 class="flex items-center gap-2 font-black text-emerald-950"><i
+                        class="fa-solid {{ $moduleIcon }} text-amber-600"></i>{{ $title }}</h2>
                 <p class="text-sm text-zinc-500">Tambah dan edit data menggunakan modal.</p>
             </div>
             <button type="button" wire:click="create"
-                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-black text-white">
+                class="admin-btn-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-black text-white">
                 <i class="fa-solid fa-plus"></i>
                 Tambah Data
             </button>
         </div>
 
-            <div class="grid gap-3 border-b border-zinc-200 p-5 sm:grid-cols-[minmax(0,1fr)_auto]">
-                <x-admin.input label="Cari {{ $title }}" model="search" placeholder="Cari data berdasarkan judul, nama, kategori, status, atau keterangan" />
-                <button type="button" wire:click="resetSearch"
-                    class="inline-flex min-h-11 items-center justify-center gap-2 self-end rounded-md border border-zinc-300 px-3 text-sm font-bold text-zinc-700">
-                    <i class="fa-solid fa-rotate-left"></i>
-                    Reset
-                </button>
-            </div>
+        <div class="grid gap-3 border-b border-zinc-200 p-5 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <x-admin.input label="Cari {{ $title }}" model="search"
+                placeholder="Cari data berdasarkan judul, nama, kategori, status, atau keterangan" />
+            <button type="button" wire:click="resetSearch"
+                class="inline-flex min-h-11 items-center justify-center gap-2 self-end rounded-md border border-zinc-300 px-3 text-sm font-bold text-zinc-700">
+                <i class="fa-solid fa-rotate-left"></i>
+                Reset
+            </button>
+        </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-zinc-50 text-xs uppercase text-zinc-500">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-zinc-50 text-xs uppercase text-zinc-500">
+                    <tr>
+                        @foreach ($columns as $label)
+                            <th class="px-5 py-3">{{ $label }}</th>
+                        @endforeach
+                        <th class="w-44 px-5 py-3">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-200">
+                    @forelse($rows as $row)
+                        {{-- @dd($rows) --}}
                         <tr>
-                            @foreach ($columns as $label)
-                                <th class="px-5 py-3">{{ $label }}</th>
-                            @endforeach
-                            <th class="w-44 px-5 py-3">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-200">
-                        @forelse($rows as $row)
-                            <tr>
-                                @foreach ($columns as $key => $label)
-                                    <td class="px-5 py-4">
-                                        @if ($key === 'thumbnail')
-                                            @php($imageUrl = in_array($module, ['businesses', 'bumdes'], true) ? $row['featured_image_url'] ?? null : $row['image_url'] ?? null)
-                                            @if ($imageUrl)
-                                                <img src="{{ $imageUrl }}"
-                                                    alt="Thumbnail {{ in_array($module, ['businesses', 'bumdes'], true) ? $row['name'] : $row['title'] }}"
-                                                    loading="lazy"
-                                                    class="size-16 rounded-lg border border-zinc-200 object-cover">
-                                            @else
-                                                <div
-                                                    class="grid size-16 place-items-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 text-zinc-300">
-                                                    <i
-                                                        class="fa-solid {{ ($row['content_type'] ?? '') === 'pdf' ? 'fa-file-pdf' : (($row['content_type'] ?? '') === 'fliphtml' ? 'fa-book-open' : 'fa-link') }}"></i>
-                                                </div>
-                                            @endif
-                                        @elseif($key === 'coordinates')
-                                            @if ($row['latitude'] !== null && $row['longitude'] !== null)
-                                                <a href="https://www.google.com/maps?q={{ $row['latitude'] }},{{ $row['longitude'] }}"
-                                                    target="_blank" rel="noopener"
-                                                    class="inline-flex items-center gap-2 whitespace-nowrap font-bold text-emerald-700 hover:text-emerald-900">
-                                                    <i class="fa-solid fa-location-dot"></i> Google Maps
-                                                </a>
-                                            @else
-                                                <span class="text-zinc-400">Belum diatur</span>
-                                            @endif
-                                        @elseif($key === 'social_media')
-                                            <div class="flex items-center gap-2">
-                                                @foreach ([['instagram_url', 'fa-instagram', 'Instagram'], ['facebook_url', 'fa-facebook-f', 'Facebook'], ['tiktok_url', 'fa-tiktok', 'TikTok']] as [$field, $icon, $socialLabel])
-                                                    @if (!empty($row[$field]))
-                                                        <a href="{{ $row[$field] }}" target="_blank" rel="noopener"
-                                                            title="{{ $socialLabel }}"
-                                                            aria-label="{{ $socialLabel }} {{ $row['name'] }}"
-                                                            class="grid size-8 place-items-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-emerald-100 hover:text-emerald-700"><i
-                                                                class="fa-brands {{ $icon }}"></i></a>
-                                                    @endif
-                                                @endforeach
-                                                @if (empty($row['instagram_url']) && empty($row['facebook_url']) && empty($row['tiktok_url']))
-                                                    <span class="text-zinc-400">-</span>
-                                                @endif
-                                            </div>
-                                        @elseif(in_array($key, ['status', 'attendance_status', 'category_name', 'category_type', 'type', 'content_type'], true))
-                                            <x-admin.pill :value="data_get($row, $key, '-')" :type="str_contains($key, 'category') ? 'category' : 'default'" />
-                                        @elseif($key === 'is_published')
-                                            <x-admin.pill :value="$row['is_published'] ? 'published' : 'draft'" />
-                                        @else
-                                            {{ data_get($row, $key, '-') }}
-                                        @endif
-                                    </td>
-                                @endforeach
+                            @foreach ($columns as $key => $label)
                                 <td class="px-5 py-4">
-                                    <div class="flex gap-2">
-                                        <button type="button" wire:click="edit({{ $row['id'] }})"
-                                            class="rounded bg-zinc-100 px-3 py-2 text-xs font-bold">Edit</button>
-                                        <button type="button" wire:click="delete({{ $row['id'] }})"
-                                            wire:confirm="Hapus data ini?"
-                                            class="rounded bg-red-50 px-3 py-2 text-xs font-bold text-red-700">Hapus</button>
-                                    </div>
+                                    @if ($key === 'thumbnail')
+                                        @php($imageUrl = in_array($module, ['businesses', 'bumdes'], true) ? $row['featured_image_url'] ?? null : $row['image_url'] ?? null)
+                                        @if ($imageUrl)
+                                            <img src="{{ $imageUrl }}"
+                                                alt="Thumbnail {{ in_array($module, ['businesses', 'bumdes'], true) ? $row['name'] : $row['title'] }}"
+                                                loading="lazy"
+                                                class="size-16 rounded-lg border border-zinc-200 object-cover">
+                                        @else
+                                            <div
+                                                class="grid size-16 place-items-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 text-zinc-300">
+                                                <i
+                                                    class="fa-solid {{ ($row['content_type'] ?? '') === 'pdf' ? 'fa-file-pdf' : (($row['content_type'] ?? '') === 'fliphtml' ? 'fa-book-open' : 'fa-link') }}"></i>
+                                            </div>
+                                        @endif
+                                    @elseif($key === 'coordinates')
+                                        @if ($row['latitude'] !== null && $row['longitude'] !== null)
+                                            <a href="https://www.google.com/maps?q={{ $row['latitude'] }},{{ $row['longitude'] }}"
+                                                target="_blank" rel="noopener"
+                                                class="inline-flex items-center gap-2 whitespace-nowrap font-bold text-emerald-700 hover:text-emerald-900">
+                                                <i class="fa-solid fa-location-dot"></i> Google Maps
+                                            </a>
+                                        @else
+                                            <span class="text-zinc-400">Belum diatur</span>
+                                        @endif
+                                    @elseif($key === 'social_media')
+                                        <div class="flex items-center gap-2">
+                                            @foreach ([['instagram_url', 'fa-instagram', 'Instagram'], ['facebook_url', 'fa-facebook-f', 'Facebook'], ['tiktok_url', 'fa-tiktok', 'TikTok']] as [$field, $icon, $socialLabel])
+                                                @if (!empty($row[$field]))
+                                                    <a href="{{ $row[$field] }}" target="_blank" rel="noopener"
+                                                        title="{{ $socialLabel }}"
+                                                        aria-label="{{ $socialLabel }} {{ $row['name'] }}"
+                                                        class="grid size-8 place-items-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-emerald-100 hover:text-emerald-700"><i
+                                                            class="fa-brands {{ $icon }}"></i></a>
+                                                @endif
+                                            @endforeach
+                                            @if (empty($row['instagram_url']) && empty($row['facebook_url']) && empty($row['tiktok_url']))
+                                                <span class="text-zinc-400">-</span>
+                                            @endif
+                                        </div>
+                                    @elseif(in_array($key, ['status', 'attendance_status', 'category_name', 'category_type', 'type'], true))
+                                        <x-admin.pill :value="data_get($row, $key, '-')" :type="str_contains($key, 'category') ? 'category' : 'default'" />
+                                    @elseif(in_array($key, ['content_type'], true))
+                                        <x-admin.pill :value="data_get($row, $key, '-')" icon="fa-solid fa-file-contract" />
+                                    @elseif($key === 'is_published')
+                                        <x-admin.pill :value="$row['is_published'] ? 'published' : 'draft'" />
+                                    @elseif($key === 'file_url')
+                                        @if (!empty($row['file_url']))
+                                            <a href="{{ $row['file_url'] }}" target="_blank" rel="noopener"
+                                                class="inline-flex items-center gap-2 whitespace-nowrap font-bold text-emerald-700 hover:text-emerald-900">
+                                                <x-admin.pill :value="'Unduh .' . pathinfo($row['file_url'], PATHINFO_EXTENSION)" type="default"
+                                                    icon="fa-solid fa-download" />
+                                            </a>
+                                        @else
+                                            <span class="text-zinc-400">Belum diunggah</span>
+                                        @endif
+                                    @elseif($key === 'published_at')
+                                        @if (!empty($row['published_at']))
+                                            {{ \Carbon\Carbon::parse($row['published_at'])->translatedFormat('d F Y') }}
+                                        @else
+                                            <span class="text-zinc-400">Belum dipublikasikan</span>
+                                        @endif
+                                    @else
+                                        {{ data_get($row, $key, '-') }}
+                                    @endif
                                 </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="{{ count($columns) + 1 }}" class="px-5 py-10 text-center text-zinc-500">
-                                    Belum ada data.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                            @endforeach
+                            <td class="px-5 py-4">
+                                <div class="flex gap-2">
+                                    <button type="button" wire:click="edit({{ $row['id'] }})"
+                                        class="inline-flex min-h-9 items-center gap-2 rounded bg-zinc-100 px-3 text-xs font-bold"><i
+                                            class="fa-solid fa-pen"></i>Edit</button>
+                                    <button type="button" wire:click="delete({{ $row['id'] }})"
+                                        wire:confirm="Hapus data ini?"
+                                        class="inline-flex min-h-9 items-center gap-2 rounded bg-red-50 px-3 text-xs font-bold text-red-700"><i
+                                            class="fa-solid fa-trash"></i>Hapus</button>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ count($columns) + 1 }}" class="px-5 py-10 text-center text-zinc-500">
+                                Belum ada data.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="flex items-center justify-between gap-4 border-t border-zinc-200 px-5 py-4 text-sm">
+            <span class="font-semibold text-zinc-500">{{ $totalRows }} data · Halaman
+                {{ $page }}</span>
+            <div class="flex gap-2">
+                <button type="button" wire:click="previousPage" @disabled($page <= 1)
+                    class="rounded-md border border-zinc-200 px-3 py-2 font-bold disabled:opacity-40">Sebelumnya</button>
+                <button type="button" wire:click="nextPage" @disabled($page >= max((int) ceil($totalRows / $perPage), 1))
+                    class="rounded-md border border-zinc-200 px-3 py-2 font-bold disabled:opacity-40">Berikutnya</button>
             </div>
-            <div class="flex items-center justify-between gap-4 border-t border-zinc-200 px-5 py-4 text-sm">
-                <span class="font-semibold text-zinc-500">{{ $totalRows }} data · Halaman
-                    {{ $page }}</span>
-                <div class="flex gap-2">
-                    <button type="button" wire:click="previousPage" @disabled($page <= 1)
-                        class="rounded-md border border-zinc-200 px-3 py-2 font-bold disabled:opacity-40">Sebelumnya</button>
-                    <button type="button" wire:click="nextPage" @disabled($page >= max((int) ceil($totalRows / $perPage), 1))
-                        class="rounded-md border border-zinc-200 px-3 py-2 font-bold disabled:opacity-40">Berikutnya</button>
-                </div>
-            </div>
+        </div>
     </section>
 
     @if ($showModal)
         <div x-data @click.self="$wire.closeModal()" @keydown.escape.window="$wire.closeModal()"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-4" role="dialog"
-            aria-modal="true">
-            <div class="max-h-[90dvh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-2xl">
-                <div class="flex items-center justify-between border-b border-zinc-200 p-5">
+            class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"
+            role="dialog" aria-modal="true">
+            <div class="admin-panel max-h-[90dvh] w-full max-w-4xl overflow-y-auto border bg-white shadow-2xl">
+                <div class="admin-panel-header flex items-center justify-between border-b p-5">
                     <div>
-                        <h3 class="text-lg font-black">{{ $form['id'] ? 'Edit' : 'Tambah' }} {{ $title }}</h3>
+                        <h3 class="text-lg font-black text-emerald-950">{{ $form['id'] ? 'Edit' : 'Tambah' }}
+                            {{ $title }}</h3>
                         <p class="text-sm text-zinc-500">Isi data lalu simpan perubahan.</p>
                     </div>
                     <button type="button" wire:click="closeModal"
-                        class="grid size-11 place-items-center rounded-md border border-zinc-300"
+                        class="grid size-11 place-items-center rounded-md border border-emerald-950/15 text-zinc-700 hover:bg-zinc-50"
                         aria-label="Tutup modal">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
                 <form wire:submit="save" class="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-                    @if(in_array($module, ['businesses', 'bumdes'], true))
+                    @if (in_array($module, ['businesses', 'bumdes'], true))
                         @php($isBumdes = $module === 'bumdes')
                         @php($entityLabel = $isBumdes ? 'BUMDES' : 'UMKM')
                         <x-admin.input :label="$isBumdes ? 'Nama BUMDES' : 'Nama Usaha'" model="form.name" />
@@ -849,7 +872,7 @@ new class extends Component {
                             ->pluck('name', 'id')
                             ->prepend('Pilih kategori', '')
                             ->all()" />
-                        @if($isBumdes)
+                        @if ($isBumdes)
                             <x-admin.input label="Pengelola" model="form.manager_name" />
                         @else
                             <x-admin.input label="Pemilik" model="form.owner_name" />
@@ -861,7 +884,7 @@ new class extends Component {
                             placeholder="https://facebook.com/namausaha" />
                         <x-admin.input label="TikTok" model="form.tiktok_url" type="url"
                             placeholder="https://tiktok.com/@namausaha" />
-                        @unless($isBumdes)
+                        @unless ($isBumdes)
                             <x-admin.input label="Dusun" model="form.hamlet" />
                         @endunless
                         <x-admin.input label="Pekerja" model="form.worker_count" type="number" />
@@ -882,28 +905,31 @@ new class extends Component {
                             @endif
                         </div>
                         <div class="lg:col-span-3">
-                            <label class="text-sm font-bold">Gambar {{ $entityLabel }}</label>
-                            <p class="mt-1 text-xs text-zinc-500">Digunakan sebagai cover utama pada daftar {{ $entityLabel }}.</p>
+                            <label class="admin-field-label">Gambar {{ $entityLabel }}</label>
+                            <p class="mt-1 text-xs text-zinc-500">Digunakan sebagai cover utama pada daftar
+                                {{ $entityLabel }}.</p>
                             <input type="file" wire:model="businessImageUpload" accept="image/*"
-                                class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                                class="admin-control mt-1">
                             @error('businessImageUpload')
                                 <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                             @enderror
                             <div wire:loading wire:target="businessImageUpload" class="mt-1 text-sm text-zinc-500">
                                 Mengunggah gambar...</div>
                             @if ($businessImageUpload)
-                                <img src="{{ $businessImageUpload->temporaryUrl() }}" alt="Preview gambar {{ $entityLabel }}"
-                                    class="mt-2 h-32 w-full rounded-md object-cover">
+                                <img src="{{ $businessImageUpload->temporaryUrl() }}"
+                                    alt="Preview gambar {{ $entityLabel }}"
+                                    class="mt-2 h-32 w-full rounded-xl border border-emerald-950/10 object-cover">
                             @elseif($form['featured_image_url'])
                                 <img src="{{ $form['featured_image_url'] }}" alt="Gambar saat ini"
-                                    class="mt-2 h-32 w-full rounded-md object-cover">
+                                    class="mt-2 h-32 w-full rounded-xl border border-emerald-950/10 object-cover">
                             @endif
                         </div>
                         <div class="lg:col-span-3">
-                            <label class="text-sm font-bold">Foto Galeri {{ $entityLabel }}</label>
-                            <p class="mt-1 text-xs text-zinc-500">Pilih lebih dari satu foto untuk gallery detail {{ $entityLabel }} di website publik.</p>
+                            <label class="admin-field-label">Foto Galeri {{ $entityLabel }}</label>
+                            <p class="mt-1 text-xs text-zinc-500">Pilih lebih dari satu foto untuk gallery detail
+                                {{ $entityLabel }} di website publik.</p>
                             <input type="file" wire:model="businessPhotoUploads" accept="image/*" multiple
-                                class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                                class="admin-control mt-1">
                             @error('businessPhotoUploads')
                                 <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                             @enderror
@@ -915,18 +941,22 @@ new class extends Component {
                             @if ($businessPhotoUploads)
                                 <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                                     @foreach ($businessPhotoUploads as $photoUpload)
-                                        <img src="{{ $photoUpload->temporaryUrl() }}" alt="Preview foto galeri {{ $entityLabel }}"
-                                            class="h-24 w-full rounded-md object-cover">
+                                        <img src="{{ $photoUpload->temporaryUrl() }}"
+                                            alt="Preview foto galeri {{ $entityLabel }}"
+                                            class="h-24 w-full rounded-xl border border-emerald-950/10 object-cover">
                                     @endforeach
                                 </div>
                             @endif
                             @if ($businessPhotos)
                                 <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                                     @foreach ($businessPhotos as $photo)
-                                        <div class="group relative overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
-                                            <img src="{{ $photo['image_url'] }}" alt="Foto galeri {{ $entityLabel }}"
+                                        <div
+                                            class="group relative overflow-hidden rounded-xl border border-emerald-950/10 bg-zinc-50">
+                                            <img src="{{ $photo['image_url'] }}"
+                                                alt="Foto galeri {{ $entityLabel }}"
                                                 class="h-24 w-full object-cover">
-                                            <button type="button" wire:click="removeBusinessPhoto({{ $photo['id'] }})"
+                                            <button type="button"
+                                                wire:click="removeBusinessPhoto({{ $photo['id'] }})"
                                                 wire:confirm="Hapus foto galeri ini?"
                                                 class="absolute right-2 top-2 grid size-8 place-items-center rounded-md bg-red-600 text-white opacity-95 shadow-lg"
                                                 aria-label="Hapus foto galeri">
@@ -962,9 +992,9 @@ new class extends Component {
                             @endif
                         </div>
                         <div>
-                            <label class="text-sm font-bold">Gambar Pembangunan</label>
+                            <label class="admin-field-label">Gambar Pembangunan</label>
                             <input type="file" wire:model="projectImageUpload" accept="image/*"
-                                class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                                class="admin-control mt-1">
                             @error('projectImageUpload')
                                 <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                             @enderror
@@ -972,10 +1002,10 @@ new class extends Component {
                                 Mengunggah gambar...</div>
                             @if ($projectImageUpload)
                                 <img src="{{ $projectImageUpload->temporaryUrl() }}" alt="Preview gambar pembangunan"
-                                    class="mt-2 h-24 w-full rounded-md object-cover">
+                                    class="mt-2 h-24 w-full rounded-xl border border-emerald-950/10 object-cover">
                             @elseif($form['image_url'])
                                 <img src="{{ $form['image_url'] }}" alt="Gambar saat ini"
-                                    class="mt-2 h-24 w-full rounded-md object-cover">
+                                    class="mt-2 h-24 w-full rounded-xl border border-emerald-950/10 object-cover">
                             @endif
                         </div>
                         <x-admin.textarea label="Deskripsi" model="form.description" class="lg:col-span-3" />
@@ -984,9 +1014,8 @@ new class extends Component {
                             <x-admin.input label="Judul" model="form.title" />
                         </div>
                         <div class="lg:col-span-3">
-                            <label class="text-sm font-bold">Berkas Unduhan</label>
-                            <input type="file" wire:model="documentUpload"
-                                class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                            <label class="admin-field-label">Berkas Unduhan</label>
+                            <input type="file" wire:model="documentUpload" class="admin-control mt-1">
                             @error('documentUpload')
                                 <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                             @enderror
@@ -1032,9 +1061,9 @@ new class extends Component {
                             ]" />
 
                             <div class="lg:col-span-3">
-                                <label class="text-sm font-bold">Thumbnail Publikasi (opsional, maks. 10MB)</label>
+                                <label class="admin-field-label">Thumbnail Publikasi (opsional, maks. 10MB)</label>
                                 <input type="file" wire:model="desaCantikImageUpload" accept="image/*"
-                                    class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                                    class="admin-control mt-1">
                                 @error('desaCantikImageUpload')
                                     <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                                 @enderror
@@ -1043,19 +1072,18 @@ new class extends Component {
                                 @if ($desaCantikImageUpload)
                                     <img src="{{ $desaCantikImageUpload->temporaryUrl() }}"
                                         alt="Preview thumbnail publikasi"
-                                        class="mt-2 h-40 w-full rounded-md object-cover">
+                                        class="mt-2 h-40 w-full rounded-xl border border-emerald-950/10 object-cover">
                                 @elseif($form['image_url'])
                                     <img src="{{ $form['image_url'] }}" alt="Thumbnail publikasi saat ini"
-                                        class="mt-2 h-40 w-full rounded-md object-cover">
+                                        class="mt-2 h-40 w-full rounded-xl border border-emerald-950/10 object-cover">
                                 @endif
                             </div>
 
                             @if ($form['content_type'] === 'pdf')
                                 <div class="lg:col-span-3">
-                                    <label class="text-sm font-bold">File PDF Publikasi (maks. 10MB)</label>
+                                    <label class="admin-field-label">File PDF Publikasi (maks. 10MB)</label>
                                     <input type="file" wire:model="desaCantikDocumentUpload"
-                                        accept="application/pdf"
-                                        class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                                        accept="application/pdf" class="admin-control mt-1">
                                     @error('desaCantikDocumentUpload')
                                         <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                                     @enderror
@@ -1077,9 +1105,9 @@ new class extends Component {
                         @else
                             <input type="hidden" wire:model="form.content_type">
                             <div class="lg:col-span-3">
-                                <label class="text-sm font-bold">Gambar Infografis (maks. 10MB)</label>
+                                <label class="admin-field-label">Gambar Infografis (maks. 10MB)</label>
                                 <input type="file" wire:model="desaCantikImageUpload" accept="image/*"
-                                    class="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                                    class="admin-control mt-1">
                                 @error('desaCantikImageUpload')
                                     <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                                 @enderror
@@ -1087,10 +1115,10 @@ new class extends Component {
                                     class="mt-1 text-sm text-zinc-500">Mengunggah gambar...</div>
                                 @if ($desaCantikImageUpload)
                                     <img src="{{ $desaCantikImageUpload->temporaryUrl() }}" alt="Preview infografis"
-                                        class="mt-2 max-h-[30rem] w-full rounded-md object-contain">
+                                        class="mt-2 max-h-[30rem] w-full rounded-xl border border-emerald-950/10 object-contain">
                                 @elseif($form['image_url'])
                                     <img src="{{ $form['image_url'] }}" alt="Infografis saat ini"
-                                        class="mt-2 max-h-[30rem] w-full rounded-md object-contain">
+                                        class="mt-2 max-h-[30rem] w-full rounded-xl border border-emerald-950/10 object-contain">
                                 @endif
                             </div>
                         @endif
@@ -1098,11 +1126,14 @@ new class extends Component {
                         <x-admin.textarea label="Deskripsi" model="form.description" class="lg:col-span-3" />
                     @endif
 
-                    <div class="flex justify-end gap-2 border-t border-zinc-200 pt-5 sm:col-span-2 lg:col-span-3">
+                    <div
+                        class="flex justify-end gap-2 border-t border-emerald-950/10 pt-5 sm:col-span-2 lg:col-span-3">
                         <button type="button" wire:click="closeModal"
-                            class="inline-flex min-h-11 items-center rounded-md border border-zinc-300 px-4 text-sm font-bold">Batal</button>
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md border border-emerald-950/15 px-4 text-sm font-bold text-zinc-700"><i
+                                class="fa-solid fa-xmark"></i>Batal</button>
                         <button
-                            class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 text-sm font-black text-white">Simpan</button>
+                            class="admin-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-sm font-black text-white"><i
+                                class="fa-solid fa-floppy-disk"></i>Simpan</button>
                     </div>
                 </form>
             </div>

@@ -1,11 +1,83 @@
 {
     "application": "Website Desa",
     "component": "Frontend Publik",
-    "current_version": "1.5.0",
+    "current_version": "1.6.5",
     "framework": "Next.js 16",
-    "released_at": "2026-07-06",
+    "released_at": "2026-07-13",
     "description": "Website publik desa dengan dukungan multi-theme, data realtime, carousel, galeri, peta, statistik, dan modul informasi desa.",
     "releases": [
+        {
+            "version": "1.6.5",
+            "date": "2026-07-13",
+            "status": "stable",
+            "title": "Sinkronisasi Patch Styling dan Widget CMS",
+            "changes": [
+                "Menyinkronkan metadata build frontend dengan rilis CMS Backend 1.6.5.",
+                "Menjaga pembacaan Shortcut Beranda tetap kompatibel setelah pengaturannya dipindahkan ke modul CMS tersendiri.",
+                "Menjaga renderer widget berdasarkan placement tetap kompatibel dengan perpindahan posisi melalui drag and drop CMS.",
+                "Mempertahankan versi footer frontend dari package build lokal masing-masing website desa."
+            ]
+        },
+        {
+            "version": "1.6.4",
+            "date": "2026-07-13",
+            "status": "stable",
+            "title": "Theme Cartoon dan Pengendalian Akses Publik",
+            "changes": [
+                "Menambahkan Theme Cartoon dengan warna orange, putih, dan biru serta font cartoon sebagai gaya default.",
+                "Menyempurnakan banner multiple, header, kartu, widget, warna teks, dan penerapan Theme Cartoon pada halaman publik.",
+                "Menambahkan proxy unduhan agar URL backend tidak terekspos dan kegagalan download menampilkan notifikasi.",
+                "Membatasi akses route, shortcut, footer, dan widget publik berdasarkan Menu Dinamis yang aktif pada CMS."
+            ]
+        },
+        {
+            "version": "1.6.3",
+            "date": "2026-07-10",
+            "status": "stable",
+            "title": "Sinkronisasi Patch Statistik CMS",
+            "changes": [
+                "Menyinkronkan metadata versi frontend dengan rilis CMS Backend 1.6.3.",
+                "Menjaga label versi website publik tetap mengikuti build frontend lokal.",
+                "Mencatat patch statistik pengunjung, referensi desa, dan captcha sebagai rilis aplikasi terbaru.",
+                "Menjaga kompatibilitas frontend publik terhadap payload CMS yang sudah diperbarui."
+            ]
+        },
+        {
+            "version": "1.6.2",
+            "date": "2026-07-08",
+            "status": "stable",
+            "title": "Penyederhanaan Filter Artikel Publik",
+            "changes": [
+                "Menghapus filter sumber dari halaman artikel publik agar selaras dengan CMS yang tidak lagi memakai sumber artikel.",
+                "Membersihkan kontrak response artikel publik sehingga filter hanya memuat kategori.",
+                "Menjaga parameter URL lama source tidak ikut diteruskan pada pagination artikel.",
+                "Menyinkronkan metadata versi frontend dengan rilis CMS backend 1.6.2."
+            ]
+        },
+        {
+            "version": "1.6.1",
+            "date": "2026-07-08",
+            "status": "stable",
+            "title": "Galeri Publik dengan Lightbox Video",
+            "changes": [
+                "Menampilkan foto dan video dalam satu detail album galeri publik.",
+                "Mengubah video galeri menjadi thumbnail di grid dan memutar video hanya saat dibuka di lightbox.",
+                "Menggunakan thumbnail video YouTube sebagai fallback cover untuk album yang tidak memiliki foto.",
+                "Menyelaraskan tipe data galeri publik dengan payload media gabungan dari backend CMS."
+            ]
+        },
+        {
+            "version": "1.6.0",
+            "date": "2026-07-07",
+            "status": "stable",
+            "title": "Sinkronisasi Rilis CMS dan Integrasi SIDESI",
+            "changes": [
+                "Menyinkronkan metadata versi frontend untuk rilis CMS terbaru per 7 Juli 2026.",
+                "Menjaga versi frontend tetap berasal dari build frontend lokal sehingga tiap desa tetap dapat berjalan pada versi berbeda.",
+                "Menjaga kompatibilitas public view Peta Sebaran yang memakai sumber data SIDESI melalui endpoint backend.",
+                "Mencatat rilis backend terbaru sebagai acuan developer untuk pembaruan frontend desa."
+            ]
+        },
         {
             "version": "1.5.0",
             "date": "2026-07-06",

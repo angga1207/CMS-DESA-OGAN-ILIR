@@ -18,17 +18,6 @@ return new class extends Migration
             $table->index(['village_id', 'type', 'name']);
         });
 
-        Schema::create('content_sources', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('village_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('name');
-            $table->string('code', 60)->unique();
-            $table->unsignedSmallInteger('sort_order')->default(0);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-            $table->index(['village_id', 'is_active', 'sort_order']);
-        });
-
         Schema::create('posts', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('village_id')->nullable()->constrained()->nullOnDelete();
@@ -39,7 +28,6 @@ return new class extends Migration
             $table->text('excerpt')->nullable();
             $table->longText('body')->nullable();
             $table->string('featured_image_url')->nullable();
-            $table->string('source_type', 40)->default('village');
             $table->string('status', 40)->default('published');
             $table->timestamp('published_at')->nullable();
             $table->unsignedInteger('view_count')->default(0);
@@ -335,7 +323,7 @@ return new class extends Migration
             'downloadable_files', 'videos', 'gallery_photos', 'gallery_albums',
             'business_products', 'businesses', 'business_categories',
             'post_view_identities', 'posts',
-            'content_sources', 'content_categories',
+            'content_categories',
         ])->each(fn (string $table): bool => Schema::dropIfExists($table));
     }
 };
