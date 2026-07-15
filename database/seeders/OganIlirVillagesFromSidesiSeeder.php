@@ -15,8 +15,8 @@ class OganIlirVillagesFromSidesiSeeder extends Seeder
         $payload = app(SidesiClient::class)->skpd();
         $rows = collect($payload['data'] ?? [])->filter(fn($row): bool => is_array($row));
 
-        // only take Desa Senuro Timur, Sakatiga dan Tanjung Agung
-        $rows = $rows->filter(fn(array $row): bool => in_array($this->value($row['nama_skpd'] ?? null), ['DESA SAKATIGA', 'DESA SENURO TIMUR', 'DESA TANJUNG AGUNG'], true));
+        // only take Desa Tanjung Lubuk, Desa Tanjung Dayang Utara, Desa Meranjat Ilir
+        $rows = $rows->filter(fn(array $row): bool => in_array($this->value($row['nama_skpd'] ?? null), ['DESA TANJUNG LUBUK', 'DESA TANJUNG DAYANG UTARA', 'DESA MERANJAT ILIR'], true));
 
         $authorId = DB::table('users')->where('role', 'developer')->orderBy('id')->value('id');
         $provisioned = 0;
