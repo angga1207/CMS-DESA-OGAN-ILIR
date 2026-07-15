@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
                 'village_id' => null,
                 'name' => 'Developer',
                 'username' => 'developer',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('arungboto'),
                 'role' => 'developer',
             ],
         );
