@@ -54,7 +54,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             OganIlirVillagesFromSidesiSeeder::class,
-            ArisanDerasVisitorStatisticsSeeder::class,
+            VisitorStatisticsSeeder::class,
         ]);
     }
 }

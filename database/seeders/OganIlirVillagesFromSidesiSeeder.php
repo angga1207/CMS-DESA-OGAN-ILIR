@@ -13,29 +13,33 @@ class OganIlirVillagesFromSidesiSeeder extends Seeder
     public function run(): void
     {
         $payload = app(SidesiClient::class)->skpd();
-        $rows = collect($payload['data'] ?? [])->filter(fn ($row): bool => is_array($row));
+        $rows = collect($payload['data'] ?? [])->filter(fn($row): bool => is_array($row));
+
+        // only take Desa Senuro Timur, Sakatiga dan Tanjung Agung
+        $rows = $rows->filter(fn(array $row): bool => in_array($this->value($row['nama_skpd'] ?? null), ['DESA SAKATIGA', 'DESA SENURO TIMUR', 'DESA TANJUNG AGUNG'], true));
+
         $authorId = DB::table('users')->where('role', 'developer')->orderBy('id')->value('id');
         $provisioned = 0;
 
         $districtsBySkpdId = $rows
-            ->filter(fn (array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'kecamatan')
-            ->mapWithKeys(fn (array $row): array => [
+            ->filter(fn(array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'kecamatan')
+            ->mapWithKeys(fn(array $row): array => [
                 (string) ($row['id_skpd'] ?? '') => $this->districtName($row['nama_skpd'] ?? null),
             ])
             ->filter()
             ->all();
 
         $districtsByCode = $rows
-            ->filter(fn (array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'kecamatan')
-            ->mapWithKeys(fn (array $row): array => [
+            ->filter(fn(array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'kecamatan')
+            ->mapWithKeys(fn(array $row): array => [
                 (string) ($row['id_kecamatan'] ?? '') => $this->districtName($row['nama_skpd'] ?? null),
             ])
             ->filter()
             ->all();
 
         $villages = $rows
-            ->filter(fn (array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'desa')
-            ->filter(fn (array $row): bool => filled($this->value($row['id_desa'] ?? null)))
+            ->filter(fn(array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'desa')
+            ->filter(fn(array $row): bool => filled($this->value($row['id_desa'] ?? null)))
             ->sortBy('nama_skpd')
             ->values();
 
@@ -158,7 +162,7 @@ class OganIlirVillagesFromSidesiSeeder extends Seeder
             return $candidate;
         }
 
-        $candidate = trim($base.'-'.Str::slug((string) $district), '-');
+        $candidate = trim($base . '-' . Str::slug((string) $district), '-');
 
         if ($candidate !== '' && ! DB::table('villages')->where('slug', $candidate)->exists()) {
             return $candidate;

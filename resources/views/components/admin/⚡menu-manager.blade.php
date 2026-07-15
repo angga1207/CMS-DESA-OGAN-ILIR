@@ -89,7 +89,11 @@ new class extends Component {
 
         $itemId = $this->form['id'] ?? null;
         $parentId = $this->form['parent_id'] ?: null;
-        $currentParentId = $itemId ? DB::table('navigation_items')->where('village_id', $this->villageId)->where('id', $itemId)->value('parent_id') : null;
+        $currentItem = $itemId
+            ? DB::table('navigation_items')->where('village_id', $this->villageId)->where('id', $itemId)->first()
+            : null;
+        $currentParentId = $currentItem?->parent_id;
+        $isSystemMenu = (bool) ($currentItem?->is_system ?? false);
         $payload = [
             'menu_id' => $this->publicMenuId(),
             'village_id' => $this->villageId,
@@ -103,6 +107,16 @@ new class extends Component {
             'is_active' => (bool) $this->form['is_active'],
             'updated_at' => now(),
         ];
+
+        if ($isSystemMenu) {
+            $payload = [
+                ...$payload,
+                'page_id' => $currentItem->page_id,
+                'type' => $currentItem->type,
+                'url' => $currentItem->url,
+                'target' => $currentItem->target,
+            ];
+        }
 
         if ($itemId) {
             DB::table('navigation_items')->where('village_id', $this->villageId)->where('id', $itemId)->update($payload);
@@ -120,7 +134,49 @@ new class extends Component {
 
     public function delete(int $id): void
     {
+        $isProtected = DB::table('navigation_items')
+            ->where('village_id', $this->villageId)
+            ->where(function ($query) use ($id): void {
+                $query->where('id', $id)
+                    ->orWhere('parent_id', $id);
+            })
+            ->where('is_system', true)
+            ->exists();
+
+        if ($isProtected) {
+            LivewireAlert::title('Menu bawaan dilindungi')
+                ->text('Menu bawaan aplikasi tidak dapat dihapus atau terhapus bersama menu induknya.')
+                ->warning()
+                ->show();
+
+            return;
+        }
+
         DB::table('navigation_items')->where('village_id', $this->villageId)->where('id', $id)->delete();
+
+        PublicSiteCache::forget($this->villageId);
+        $this->loadData();
+    }
+
+    public function toggle(int $id): void
+    {
+        $menu = DB::table('navigation_items')
+            ->where('village_id', $this->villageId)
+            ->where('menu_id', $this->publicMenuId())
+            ->where('id', $id)
+            ->first(['id', 'is_active']);
+
+        if (! $menu) {
+            return;
+        }
+
+        DB::table('navigation_items')
+            ->where('village_id', $this->villageId)
+            ->where('id', $id)
+            ->update([
+                'is_active' => ! $menu->is_active,
+                'updated_at' => now(),
+            ]);
 
         PublicSiteCache::forget($this->villageId);
         $this->loadData();
@@ -218,6 +274,7 @@ new class extends Component {
             'target' => '_self',
             'sort_order' => 0,
             'is_active' => true,
+            'is_system' => false,
         ];
     }
 
@@ -299,6 +356,12 @@ new class extends Component {
                                     <h3 class="font-black text-zinc-950">{{ $mainMenu['label'] }}</h3>
                                     <x-admin.pill :value="$mainMenu['type']" />
                                     <x-admin.pill :value="$mainMenu['is_active'] ? 'active' : 'inactive'" />
+                                    @if ($mainMenu['is_system'])
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-bold text-sky-700">
+                                            <i class="fa-solid fa-lock text-[10px]"></i>
+                                            Menu Bawaan
+                                        </span>
+                                    @endif
                                     <span class="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-bold text-zinc-600">
                                         {{ $children->count() }} submenu
                                     </span>
@@ -309,6 +372,13 @@ new class extends Component {
                             </div>
                         </div>
                         <div class="flex shrink-0 flex-wrap gap-2">
+                            <button type="button" wire:click="toggle({{ $mainMenu['id'] }})"
+                                wire:loading.attr="disabled" wire:target="toggle({{ $mainMenu['id'] }})"
+                                class="inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-xs font-bold disabled:opacity-50 {{ $mainMenu['is_active'] ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' }}"
+                                title="{{ $mainMenu['is_active'] ? 'Nonaktifkan menu' : 'Aktifkan menu' }}">
+                                <i class="fa-solid {{ $mainMenu['is_active'] ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i>
+                                {{ $mainMenu['is_active'] ? 'Nonaktifkan' : 'Aktifkan' }}
+                            </button>
                             <button type="button" wire:click="createSubmenu({{ $mainMenu['id'] }})"
                                 class="inline-flex min-h-9 items-center gap-2 rounded-md bg-emerald-50 px-3 text-xs font-bold text-emerald-700 hover:bg-emerald-100">
                                 <i class="fa-solid fa-plus"></i> Submenu
@@ -317,11 +387,13 @@ new class extends Component {
                                 class="inline-flex min-h-9 items-center gap-2 rounded-md bg-zinc-100 px-3 text-xs font-bold hover:bg-zinc-200">
                                 <i class="fa-solid fa-pen"></i> Edit
                             </button>
-                            <button type="button" wire:click="delete({{ $mainMenu['id'] }})"
-                                wire:confirm="Hapus menu utama beserta seluruh submenunya?"
-                                class="inline-flex min-h-9 items-center gap-2 rounded-md bg-red-50 px-3 text-xs font-bold text-red-700 hover:bg-red-100">
-                                <i class="fa-solid fa-trash"></i> Hapus
-                            </button>
+                            @if (! $mainMenu['is_system'] && ! $children->contains(fn (array $child): bool => (bool) $child['is_system']))
+                                <button type="button" wire:click="delete({{ $mainMenu['id'] }})"
+                                    wire:confirm="Hapus menu utama beserta seluruh submenunya?"
+                                    class="inline-flex min-h-9 items-center gap-2 rounded-md bg-red-50 px-3 text-xs font-bold text-red-700 hover:bg-red-100">
+                                    <i class="fa-solid fa-trash"></i> Hapus
+                                </button>
+                            @endif
                         </div>
                     </div>
 
@@ -354,22 +426,37 @@ new class extends Component {
                                                 <span class="font-bold text-zinc-900">{{ $child['label'] }}</span>
                                                 <x-admin.pill :value="$child['type']" />
                                                 <x-admin.pill :value="$child['is_active'] ? 'active' : 'inactive'" />
+                                                @if ($child['is_system'])
+                                                    <span class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-1 text-[10px] font-bold text-sky-700">
+                                                        <i class="fa-solid fa-lock text-[9px]"></i>
+                                                        Bawaan
+                                                    </span>
+                                                @endif
                                             </div>
                                             <p class="mt-1 truncate text-xs text-zinc-500">
                                                 {{ $child['type'] === 'page' ? ($child['page_title'] ?: 'Halaman belum dipilih') : ($child['url'] ?: 'URL belum diisi') }}
                                             </p>
                                         </div>
                                     </div>
-                                    <div class="flex shrink-0 gap-2">
+                                    <div class="flex shrink-0 flex-wrap gap-2">
+                                        <button type="button" wire:click="toggle({{ $child['id'] }})"
+                                            wire:loading.attr="disabled" wire:target="toggle({{ $child['id'] }})"
+                                            class="inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-xs font-bold disabled:opacity-50 {{ $child['is_active'] ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' }}"
+                                            title="{{ $child['is_active'] ? 'Nonaktifkan submenu' : 'Aktifkan submenu' }}">
+                                            <i class="fa-solid {{ $child['is_active'] ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i>
+                                            {{ $child['is_active'] ? 'Nonaktifkan' : 'Aktifkan' }}
+                                        </button>
                                         <button type="button" wire:click="edit({{ $child['id'] }})"
                                             class="inline-flex min-h-9 items-center gap-2 rounded-md bg-zinc-100 px-3 text-xs font-bold hover:bg-zinc-200">
                                             <i class="fa-solid fa-pen"></i> Edit
                                         </button>
-                                        <button type="button" wire:click="delete({{ $child['id'] }})"
-                                            wire:confirm="Hapus submenu ini?"
-                                            class="inline-flex min-h-9 items-center gap-2 rounded-md bg-red-50 px-3 text-xs font-bold text-red-700 hover:bg-red-100">
-                                            <i class="fa-solid fa-trash"></i> Hapus
-                                        </button>
+                                        @unless ($child['is_system'])
+                                            <button type="button" wire:click="delete({{ $child['id'] }})"
+                                                wire:confirm="Hapus submenu ini?"
+                                                class="inline-flex min-h-9 items-center gap-2 rounded-md bg-red-50 px-3 text-xs font-bold text-red-700 hover:bg-red-100">
+                                                <i class="fa-solid fa-trash"></i> Hapus
+                                            </button>
+                                        @endunless
                                     </div>
                                 </div>
                             @endforeach
@@ -425,17 +512,33 @@ new class extends Component {
                         ->all()"
                         class="lg:col-span-2" />
                     <x-admin.select label="Status" model="form.is_active" :options="[1 => 'Aktif', 0 => 'Nonaktif']"/>
-                    <x-admin.select label="Jenis Tujuan" model="form.type" :options="['url' => 'URL / Tautan', 'page' => 'Halaman Khusus']" />
-
-                    @if ($form['type'] === 'page')
-                        <x-admin.select label="Halaman Tujuan" model="form.page_id" :options="collect($pages)->pluck('title', 'id')->prepend('Pilih halaman', '')->all()"
-                            class="lg:col-span-2" />
+                    @if ($form['is_system'])
+                        <div class="rounded-md border border-sky-200 bg-sky-50 p-4 sm:col-span-2 lg:col-span-3">
+                            <div class="flex items-start gap-3">
+                                <i class="fa-solid fa-lock mt-0.5 text-sky-700"></i>
+                                <div>
+                                    <div class="text-sm font-black text-sky-950">Tujuan menu bawaan dikunci</div>
+                                    <p class="mt-1 break-all text-sm text-sky-800">
+                                        {{ $form['type'] === 'page'
+                                            ? (collect($pages)->firstWhere('id', $form['page_id'])['title'] ?? 'Halaman bawaan')
+                                            : ($form['url'] ?: '/') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     @else
-                        <x-admin.input label="URL Tujuan" model="form.url"
-                            placeholder="/alamat-halaman atau https://..." class="lg:col-span-2" />
-                    @endif
+                        <x-admin.select label="Jenis Tujuan" model="form.type" :options="['url' => 'URL / Tautan', 'page' => 'Halaman Khusus']" />
 
-                    <x-admin.select label="Buka Tautan" model="form.target" :options="['_self' => 'Di tab yang sama', '_blank' => 'Di tab baru']" />
+                        @if ($form['type'] === 'page')
+                            <x-admin.select label="Halaman Tujuan" model="form.page_id" :options="collect($pages)->pluck('title', 'id')->prepend('Pilih halaman', '')->all()"
+                                class="lg:col-span-2" />
+                        @else
+                            <x-admin.input label="URL Tujuan" model="form.url"
+                                placeholder="/alamat-halaman atau https://..." class="lg:col-span-2" />
+                        @endif
+
+                        <x-admin.select label="Buka Tautan" model="form.target" :options="['_self' => 'Di tab yang sama', '_blank' => 'Di tab baru']" />
+                    @endif
 
                     <div
                         class="flex justify-end gap-2 border-t border-emerald-950/10 pt-5 sm:col-span-2 lg:col-span-3">

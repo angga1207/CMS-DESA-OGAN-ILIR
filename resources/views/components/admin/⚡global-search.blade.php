@@ -6,8 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
-new class extends Component
-{
+new class extends Component {
     public string $query = '';
 
     public function getResultsProperty(): array
@@ -30,15 +29,17 @@ new class extends Component
     private function featureResults(string $term): array
     {
         return collect($this->featureEntries())
-            ->filter(fn (array $entry): bool => $this->canAccess($entry))
-            ->filter(fn (array $entry): bool => $this->matches($entry, $term))
-            ->map(fn (array $entry): array => [
-                'title' => $entry['title'],
-                'subtitle' => $entry['subtitle'],
-                'badge' => $entry['badge'] ?? 'Fitur',
-                'href' => $entry['href'],
-                'icon' => $entry['icon'],
-            ])
+            ->filter(fn(array $entry): bool => $this->canAccess($entry))
+            ->filter(fn(array $entry): bool => $this->matches($entry, $term))
+            ->map(
+                fn(array $entry): array => [
+                    'title' => $entry['title'],
+                    'subtitle' => $entry['subtitle'],
+                    'badge' => $entry['badge'] ?? 'Fitur',
+                    'href' => $entry['href'],
+                    'icon' => $entry['icon'],
+                ],
+            )
             ->values()
             ->all();
     }
@@ -48,7 +49,7 @@ new class extends Component
         $results = [];
         $user = auth()->user();
         $villageId = CurrentVillage::id();
-        $search = '%'.Str::lower($term).'%';
+        $search = '%' . Str::lower($term) . '%';
 
         if ($this->canAccess(['roles' => ['developer', 'admin_desa', 'editor'], 'feature' => 'articles'])) {
             $rows = DB::table('posts')
@@ -93,6 +94,7 @@ new class extends Component
                 ->where(function ($query) use ($search): void {
                     $query
                         ->whereRaw('LOWER(title) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(button_label) LIKE ?', [$search])
                         ->orWhereRaw('LOWER(COALESCE(subtitle, \'\')) LIKE ?', [$search]);
                 })
                 ->latest('updated_at')
@@ -108,9 +110,7 @@ new class extends Component
             $rows = DB::table('gallery_albums')
                 ->where('village_id', $villageId)
                 ->where(function ($query) use ($search): void {
-                    $query
-                        ->whereRaw('LOWER(title) LIKE ?', [$search])
-                        ->orWhereRaw('LOWER(COALESCE(description, \'\')) LIKE ?', [$search]);
+                    $query->whereRaw('LOWER(title) LIKE ?', [$search])->orWhereRaw('LOWER(COALESCE(description, \'\')) LIKE ?', [$search]);
                 })
                 ->latest('updated_at')
                 ->limit(2)
@@ -121,20 +121,48 @@ new class extends Component
             }
         }
 
+        if ($this->canAccess(['roles' => ['developer', 'admin_desa', 'editor'], 'feature' => 'gallery'])) {
+            $rows = DB::table('gallery_photos')
+                ->where('village_id', $villageId)
+                ->where(function ($query) use ($search): void {
+                    $query->whereRaw('LOWER(title) LIKE ?', [$search])->orWhereRaw('LOWER(caption) LIKE ?', [$search]);
+                })
+                ->latest('updated_at')
+                ->limit(2)
+                ->get(['title', 'caption']);
+
+            foreach ($rows as $row) {
+                $results[] = $this->result('Galeri', $row->title, $row->caption ?: 'Album foto desa', route('admin.gallery.index'), 'fa-images');
+            }
+        }
+
+        if ($this->canAccess(['roles' => ['developer', 'admin_desa', 'editor'], 'feature' => 'gallery'])) {
+            $rows = DB::table('gallery_videos')
+                ->where('village_id', $villageId)
+                ->where(function ($query) use ($search): void {
+                    $query->whereRaw('LOWER(title) LIKE ?', [$search])->orWhereRaw('LOWER(caption) LIKE ?', [$search]);
+                })
+                ->latest('updated_at')
+                ->limit(2)
+                ->get(['title', 'caption']);
+
+            foreach ($rows as $row) {
+                $results[] = $this->result('Galeri', $row->title, $row->caption ?: 'Album foto desa', route('admin.gallery.index'), 'fa-images');
+            }
+        }
+
         if ($this->canAccess(['roles' => ['developer', 'admin_desa', 'editor'], 'feature' => 'menus'])) {
             $rows = DB::table('navigation_items')
                 ->where('village_id', $villageId)
                 ->where(function ($query) use ($search): void {
-                    $query
-                        ->whereRaw('LOWER(label) LIKE ?', [$search])
-                        ->orWhereRaw('LOWER(COALESCE(url, \'\')) LIKE ?', [$search]);
+                    $query->whereRaw('LOWER(label) LIKE ?', [$search])->orWhereRaw('LOWER(COALESCE(url, \'\')) LIKE ?', [$search]);
                 })
                 ->orderBy('sort_order')
                 ->limit(8)
                 ->get(['label', 'url']);
 
             foreach ($rows as $row) {
-                if (! $this->menuUrlAllowed($row->url)) {
+                if (!$this->menuUrlAllowed($row->url)) {
                     continue;
                 }
 
@@ -250,7 +278,7 @@ new class extends Component
             foreach ($rows as $row) {
                 $feature = $this->widgetFeature((string) $row->widget_type);
 
-                if ($feature && ! VillageFeatures::enabled($villageId, $feature, $user)) {
+                if ($feature && !VillageFeatures::enabled($villageId, $feature, $user)) {
                     continue;
                 }
 
@@ -261,7 +289,7 @@ new class extends Component
         if ($this->canAccess(['roles' => ['developer', 'admin_desa']])) {
             $rows = DB::table('users')
                 ->leftJoin('villages', 'users.village_id', '=', 'villages.id')
-                ->when($user?->role !== 'developer', fn ($query) => $query->where('users.role', '!=', 'developer')->where('users.village_id', $villageId))
+                ->when($user?->role !== 'developer', fn($query) => $query->where('users.role', '!=', 'developer')->where('users.village_id', $villageId))
                 ->where(function ($query) use ($search): void {
                     $query
                         ->whereRaw('LOWER(users.name) LIKE ?', [$search])
@@ -346,15 +374,15 @@ new class extends Component
     {
         $user = auth()->user();
 
-        if (! $user) {
+        if (!$user) {
             return false;
         }
 
-        if (isset($entry['roles']) && ! in_array($user->role, $entry['roles'], true)) {
+        if (isset($entry['roles']) && !in_array($user->role, $entry['roles'], true)) {
             return false;
         }
 
-        if (isset($entry['feature']) && ! VillageFeatures::enabled(CurrentVillage::id(), $entry['feature'], $user)) {
+        if (isset($entry['feature']) && !VillageFeatures::enabled(CurrentVillage::id(), $entry['feature'], $user)) {
             return false;
         }
 
@@ -363,23 +391,18 @@ new class extends Component
 
     private function matches(array $entry, string $term): bool
     {
-        $haystack = Str::lower(implode(' ', array_filter([
-            $entry['title'] ?? '',
-            $entry['subtitle'] ?? '',
-            $entry['badge'] ?? '',
-            $entry['feature'] ?? '',
-        ])));
+        $haystack = Str::lower(implode(' ', array_filter([$entry['title'] ?? '', $entry['subtitle'] ?? '', $entry['badge'] ?? '', $entry['feature'] ?? ''])));
 
         return str_contains($haystack, Str::lower($term));
     }
 
     private function menuUrlAllowed(?string $url): bool
     {
-        if (! $url) {
+        if (!$url) {
             return true;
         }
 
-        $path = '/'.ltrim((string) parse_url($url, PHP_URL_PATH), '/');
+        $path = '/' . ltrim((string) parse_url($url, PHP_URL_PATH), '/');
 
         $feature = collect([
             '/artikel' => 'articles',
@@ -393,9 +416,9 @@ new class extends Component
             '/peta-sebaran' => 'maps',
             '/anggaran' => 'budgets',
             '/statistik' => 'statistics',
-        ])->first(fn (string $feature, string $prefix): bool => $path === $prefix || str_starts_with($path, $prefix.'/'));
+        ])->first(fn(string $feature, string $prefix): bool => $path === $prefix || str_starts_with($path, $prefix . '/'));
 
-        return ! $feature || VillageFeatures::enabled(CurrentVillage::id(), $feature, auth()->user());
+        return !$feature || VillageFeatures::enabled(CurrentVillage::id(), $feature, auth()->user());
     }
 
     private function widgetFeature(string $widgetType): ?string
@@ -410,32 +433,19 @@ new class extends Component
     }
 }; ?>
 
-<div
-    x-data="{ open: false }"
-    x-on:click.outside="open = false"
-    x-on:keydown.escape.window="open = false"
-    class="relative w-full xl:max-w-xl"
->
+<div x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false"
+    class="relative w-full xl:max-w-xl">
     <div class="relative">
-        <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400"></i>
-        <input
-            type="search"
-            wire:model.live.debounce.250ms="query"
-            x-on:focus="open = true"
-            x-on:input="open = true"
-            placeholder="Cari konten atau fitur CMS..."
-            autocomplete="off"
-            class="h-11 w-full rounded-md border border-zinc-200 bg-zinc-50 pl-10 pr-3 text-sm font-semibold text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100"
-        >
+        <i
+            class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400"></i>
+        <input type="search" wire:model.live.debounce.250ms="query" x-on:focus="open = true" x-on:input="open = true"
+            placeholder="Cari konten atau fitur CMS..." autocomplete="off"
+            class="h-11 w-full rounded-md border border-zinc-200 bg-zinc-50 pl-10 pr-3 text-sm font-semibold text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100">
     </div>
 
-    <div
-        x-cloak
-        x-show="open"
-        x-transition.origin.top
-        class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/15"
-    >
-        @if(mb_strlen(trim($query)) < 2)
+    <div x-cloak x-show="open" x-transition.origin.top
+        class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-2xl shadow-zinc-900/15">
+        @if (mb_strlen(trim($query)) < 2)
             <div class="px-4 py-5 text-sm text-zinc-500">
                 Ketik minimal 2 karakter untuk mencari fitur, artikel, halaman, dokumen, atau data CMS.
             </div>
@@ -445,17 +455,20 @@ new class extends Component
             </div>
         @else
             <div class="max-h-[24rem] overflow-y-auto py-2">
-                @foreach($this->results as $result)
+                @foreach ($this->results as $result)
                     <a href="{{ $result['href'] }}" class="flex gap-3 px-4 py-3 transition hover:bg-emerald-50">
-                        <span class="grid size-10 shrink-0 place-items-center rounded-md bg-emerald-100 text-emerald-700">
+                        <span
+                            class="grid size-10 shrink-0 place-items-center rounded-md bg-emerald-100 text-emerald-700">
                             <i class="fa-solid {{ $result['icon'] }}"></i>
                         </span>
                         <span class="min-w-0 flex-1">
                             <span class="flex items-center gap-2">
                                 <span class="truncate text-sm font-black text-zinc-900">{{ $result['title'] }}</span>
-                                <span class="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-zinc-500">{{ $result['badge'] }}</span>
+                                <span
+                                    class="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-zinc-500">{{ $result['badge'] }}</span>
                             </span>
-                            <span class="mt-1 block truncate text-xs font-semibold text-zinc-500">{{ $result['subtitle'] }}</span>
+                            <span
+                                class="mt-1 block truncate text-xs font-semibold text-zinc-500">{{ $result['subtitle'] }}</span>
                         </span>
                     </a>
                 @endforeach

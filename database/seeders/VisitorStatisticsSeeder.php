@@ -6,17 +6,17 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class ArisanDerasVisitorStatisticsSeeder extends Seeder
+class VisitorStatisticsSeeder extends Seeder
 {
     public function run(): void
     {
         $village = DB::table('villages')
-            ->where('slug', 'desa-arisan-deras')
-            ->orWhere('name', 'Desa Arisan Deras')
+            ->where('slug', 'desa-senuro-timur')
+            ->orWhere('name', 'Desa Senuro Timur')
             ->first(['id', 'name']);
 
         if (! $village) {
-            $this->command?->warn('Desa Arisan Deras tidak ditemukan. Seeder statistik pengunjung dilewati.');
+            $this->command?->warn('Desa Senuro Timur tidak ditemukan. Seeder statistik pengunjung dilewati.');
 
             return;
         }
@@ -57,6 +57,6 @@ class ArisanDerasVisitorStatisticsSeeder extends Seeder
             }
         }
 
-        $this->command?->info('Dummy statistik pengunjung Desa Arisan Deras berhasil dibuat untuk 90 hari terakhir.');
+        $this->command?->info('Dummy statistik pengunjung Desa Senuro Timur berhasil dibuat untuk 90 hari terakhir.');
     }
 }

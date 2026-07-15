@@ -38,6 +38,25 @@ return new class extends Migration
             $table->index('author_id');
         });
 
+        Schema::create('post_revisions', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('post_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('village_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('category_id')->nullable()->constrained('content_categories')->nullOnDelete();
+            $table->foreignId('author_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('revision_author_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('title');
+            $table->string('slug');
+            $table->text('excerpt')->nullable();
+            $table->longText('body')->nullable();
+            $table->string('featured_image_url')->nullable();
+            $table->string('status', 40)->default('published');
+            $table->timestamp('published_at')->nullable();
+            $table->timestamps();
+            $table->index(['post_id', 'created_at']);
+            $table->index(['village_id', 'post_id']);
+        });
+
         Schema::create('post_view_identities', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('village_id')->constrained()->cascadeOnDelete();
@@ -96,6 +115,61 @@ return new class extends Migration
             $table->index('business_id');
         });
 
+        Schema::create('business_photos', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('village_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('business_id')->constrained()->cascadeOnDelete();
+            $table->string('image_url');
+            $table->unsignedSmallInteger('sort_order')->default(0);
+            $table->timestamps();
+            $table->index(['village_id', 'business_id', 'sort_order']);
+            $table->index('business_id');
+        });
+
+        Schema::create('bumdes_categories', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('village_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->timestamps();
+            $table->index(['village_id', 'name']);
+        });
+
+        Schema::create('bumdes', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('village_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('category_id')->nullable()->constrained('bumdes_categories')->nullOnDelete();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->string('manager_name')->nullable();
+            $table->string('whatsapp', 40)->nullable();
+            $table->string('instagram_url', 2048)->nullable();
+            $table->string('facebook_url', 2048)->nullable();
+            $table->string('tiktok_url', 2048)->nullable();
+            $table->text('address')->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+            $table->text('description')->nullable();
+            $table->string('featured_image_url')->nullable();
+            $table->unsignedInteger('worker_count')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+            $table->index(['village_id', 'is_active', 'name']);
+            $table->index(['village_id', 'updated_at']);
+            $table->index('category_id');
+        });
+
+        Schema::create('bumdes_photos', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('village_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('bumdes_id')->constrained('bumdes')->cascadeOnDelete();
+            $table->string('image_url');
+            $table->unsignedSmallInteger('sort_order')->default(0);
+            $table->timestamps();
+            $table->index(['village_id', 'bumdes_id', 'sort_order']);
+            $table->index('bumdes_id');
+        });
+
         Schema::create('gallery_albums', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('village_id')->nullable()->constrained()->nullOnDelete();
@@ -114,6 +188,22 @@ return new class extends Migration
             $table->foreignId('album_id')->constrained('gallery_albums')->cascadeOnDelete();
             $table->string('title')->nullable();
             $table->string('image_url');
+            $table->text('caption')->nullable();
+            $table->unsignedSmallInteger('sort_order')->default(0);
+            $table->timestamps();
+            $table->index(['village_id', 'album_id', 'sort_order']);
+            $table->index('album_id');
+        });
+
+        Schema::create('gallery_videos', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('village_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('album_id')->constrained('gallery_albums')->cascadeOnDelete();
+            $table->string('title')->nullable();
+            $table->string('video_url', 2048);
+            $table->string('youtube_video_id', 32);
+            $table->string('embed_url', 2048);
+            $table->string('thumbnail_url', 2048)->nullable();
             $table->text('caption')->nullable();
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
@@ -237,6 +327,7 @@ return new class extends Migration
             $table->string('target', 20)->default('_self');
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_system')->default(false);
             $table->timestamps();
             $table->index(['village_id', 'is_active', 'sort_order']);
             $table->index('menu_id');
@@ -320,9 +411,10 @@ return new class extends Migration
             'navigation_items', 'navigation_menus', 'pages',
             'development_projects',
             'desa_cantik_posts', 'desa_cantik_categories',
-            'downloadable_files', 'videos', 'gallery_photos', 'gallery_albums',
-            'business_products', 'businesses', 'business_categories',
-            'post_view_identities', 'posts',
+            'downloadable_files', 'videos', 'gallery_videos', 'gallery_photos', 'gallery_albums',
+            'bumdes_photos', 'bumdes', 'bumdes_categories',
+            'business_photos', 'business_products', 'businesses', 'business_categories',
+            'post_view_identities', 'post_revisions', 'posts',
             'content_categories',
         ])->each(fn (string $table): bool => Schema::dropIfExists($table));
     }

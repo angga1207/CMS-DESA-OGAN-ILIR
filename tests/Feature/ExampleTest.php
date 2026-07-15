@@ -59,6 +59,7 @@ class ExampleTest extends TestCase
         $this->assertTrue(Schema::hasTable('village_visitor_daily_stats'));
         $this->assertTrue(Schema::hasTable('village_widgets'));
         $this->assertTrue(Schema::hasTable('post_revisions'));
+        $this->assertTrue(Schema::hasColumn('navigation_items', 'is_system'));
         $this->assertTrue(Schema::hasTable('business_photos'));
         $this->assertTrue(Schema::hasTable('bumdes'));
         $this->assertTrue(Schema::hasTable('bumdes_categories'));
@@ -1227,9 +1228,12 @@ class ExampleTest extends TestCase
         $this->seed();
 
         $admin = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->orderBy('id')->value('id');
+        $this->withSession(['active_village_id' => $villageId]);
         $this->actingAs($admin);
 
         $menu = DB::table('navigation_items')
+            ->where('village_id', $villageId)
             ->where('label', 'Profil')
             ->first();
         $this->assertNotNull($menu);
@@ -1237,7 +1241,11 @@ class ExampleTest extends TestCase
 
         Livewire::test('admin.menu-manager')
             ->call('edit', $menu->id)
+            ->assertSet('form.is_system', true)
             ->set('form.label', 'Profil Pemerintah Desa')
+            ->set('form.url', '/url-yang-tidak-diizinkan')
+            ->set('form.target', '_blank')
+            ->set('form.is_active', false)
             ->call('save')
             ->assertHasNoErrors();
 
@@ -1245,9 +1253,68 @@ class ExampleTest extends TestCase
         $this->assertDatabaseHas('navigation_items', [
             'id' => $menu->id,
             'label' => 'Profil Pemerintah Desa',
+            'url' => '/tentang',
+            'target' => '_self',
+            'is_active' => false,
+            'is_system' => true,
         ]);
         $this->assertDatabaseMissing('navigation_items', [
+            'village_id' => $villageId,
             'label' => 'Profil',
+        ]);
+
+        Livewire::test('admin.menu-manager')
+            ->call('delete', $menu->id)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('navigation_items', [
+            'id' => $menu->id,
+            'is_system' => true,
+        ]);
+
+        Livewire::test('admin.menu-manager')
+            ->call('toggle', $menu->id)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('navigation_items', [
+            'id' => $menu->id,
+            'is_active' => true,
+            'is_system' => true,
+        ]);
+    }
+
+    public function test_admin_can_still_delete_custom_dynamic_menu(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->orderBy('id')->value('id');
+        $this->withSession(['active_village_id' => $villageId]);
+        $this->actingAs($admin);
+
+        $menuId = (int) DB::table('navigation_menus')
+            ->where('village_id', $villageId)
+            ->where('location', 'public')
+            ->value('id');
+        $customId = DB::table('navigation_items')->insertGetId([
+            'village_id' => $villageId,
+            'menu_id' => $menuId,
+            'label' => 'Menu Custom',
+            'type' => 'url',
+            'url' => '/menu-custom',
+            'sort_order' => 99,
+            'is_active' => true,
+            'is_system' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Livewire::test('admin.menu-manager')
+            ->call('delete', $customId)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseMissing('navigation_items', [
+            'id' => $customId,
         ]);
     }
 

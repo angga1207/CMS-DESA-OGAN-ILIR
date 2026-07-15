@@ -270,14 +270,15 @@ final class VillageProvisioner
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $profileId = DB::table('navigation_items')->insertGetId([
+        $tentangID = DB::table('navigation_items')->insertGetId([
             'village_id' => $villageId,
             'menu_id' => $menuId,
-            'label' => 'Profil',
+            'label' => 'Tentang Desa',
             'type' => 'url',
             'url' => '/tentang',
             'sort_order' => 2,
             'is_active' => true,
+            'is_system' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -291,6 +292,7 @@ final class VillageProvisioner
                 'url' => $url,
                 'sort_order' => $sortOrder,
                 'is_active' => true,
+                'is_system' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -299,12 +301,27 @@ final class VillageProvisioner
         DB::table('navigation_items')->insert([
             'village_id' => $villageId,
             'menu_id' => $menuId,
-            'parent_id' => $profileId,
+            'parent_id' => $tentangID,
             'page_id' => $pages['service'],
             'label' => 'Layanan Administrasi',
             'type' => 'page',
             'sort_order' => 1,
             'is_active' => true,
+            'is_system' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('navigation_items')->insert([
+            'village_id' => $villageId,
+            'menu_id' => $menuId,
+            'parent_id' => $tentangID,
+            'page_id' => $pages['profile'],
+            'label' => 'Profil Desa',
+            'type' => 'page',
+            'sort_order' => 2,
+            'is_active' => true,
+            'is_system' => false,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
