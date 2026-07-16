@@ -8,14 +8,17 @@ use App\Support\UniqueSlug;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
 new class extends Component {
     use WithFileUploads;
 
+    #[Locked]
     public ?int $id = null;
 
+    #[Locked]
     public int $villageId = 1;
 
     public array $categories = [];
@@ -45,13 +48,13 @@ new class extends Component {
 
         if ($id) {
             $post = DB::table('posts')->where('village_id', $this->villageId)->where('id', $id)->first();
-            if ($post) {
-                $this->form = array_merge($this->form, (array) $post);
-                $this->form['published_at'] = $post->published_at
-                    ? Carbon::parse($post->published_at)->format('Y-m-d\TH:i')
-                    : now()->format('Y-m-d\TH:i');
-                $this->loadRevisions();
-            }
+            abort_if(! $post, 404);
+
+            $this->form = array_merge($this->form, (array) $post);
+            $this->form['published_at'] = $post->published_at
+                ? Carbon::parse($post->published_at)->format('Y-m-d\TH:i')
+                : now()->format('Y-m-d\TH:i');
+            $this->loadRevisions();
         } else {
             $this->form['published_at'] = now()->format('Y-m-d\TH:i');
         }
@@ -81,6 +84,16 @@ new class extends Component {
             ],
         )['form'];
 
+        if ($data['category_id']) {
+            abort_unless(
+                DB::table('content_categories')
+                    ->where('village_id', $this->villageId)
+                    ->where('id', $data['category_id'])
+                    ->exists(),
+                422,
+            );
+        }
+
         if ($this->thumbnailUpload) {
             $data['featured_image_url'] = app(OptimizedImageStorage::class)->replace($this->thumbnailUpload, 'post-thumbnails', $this->form['featured_image_url'] ?: null);
         }
@@ -96,7 +109,7 @@ new class extends Component {
                 $post = DB::table('posts')->where('village_id', $this->villageId)->where('id', $this->id)->first();
 
                 if (! $post) {
-                    return;
+                    abort(404);
                 }
 
                 if (PostRevisionHistory::hasChanged($post, $payload)) {
@@ -260,6 +273,7 @@ new class extends Component {
         }
 
         return DB::table('post_revisions')
+            ->where('village_id', $this->villageId)
             ->where('post_id', $this->id)
             ->where('id', $revisionId)
             ->first();

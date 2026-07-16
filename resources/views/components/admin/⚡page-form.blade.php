@@ -6,14 +6,17 @@ use App\Support\PublicSiteCache;
 use App\Support\UniqueSlug;
 use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
 new class extends Component {
     use WithFileUploads;
 
+    #[Locked]
     public ?int $id = null;
 
+    #[Locked]
     public int $villageId = 1;
 
     public $thumbnailUpload = null;
@@ -27,9 +30,9 @@ new class extends Component {
 
         if ($id) {
             $page = DB::table('pages')->where('village_id', $this->villageId)->where('id', $id)->first();
-            if ($page) {
-                $this->form = array_merge($this->form, (array) $page);
-            }
+            abort_if(! $page, 404);
+
+            $this->form = array_merge($this->form, (array) $page);
         }
     }
 
@@ -60,7 +63,8 @@ new class extends Component {
         $payload = [...$data, 'slug' => UniqueSlug::make('pages', $data['title'], $this->id), 'author_id' => auth()->id(), 'village_id' => $this->villageId, 'published_at' => $data['status'] === 'published' ? now() : null, 'updated_at' => now()];
 
         if ($this->id) {
-            DB::table('pages')->where('village_id', $this->villageId)->where('id', $this->id)->update($payload);
+            $updated = DB::table('pages')->where('village_id', $this->villageId)->where('id', $this->id)->update($payload);
+            abort_if($updated === 0 && ! DB::table('pages')->where('village_id', $this->villageId)->where('id', $this->id)->exists(), 404);
         } else {
             $this->id = DB::table('pages')->insertGetId([...$payload, 'created_at' => now()]);
         }
