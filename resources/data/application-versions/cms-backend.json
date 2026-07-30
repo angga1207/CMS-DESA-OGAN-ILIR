@@ -1,11 +1,24 @@
 {
     "application": "CMS Desa",
     "component": "Backend CMS",
-    "current_version": "1.6.6",
+    "current_version": "1.7.0",
     "framework": "Laravel 13",
-    "released_at": "2026-07-16",
+    "released_at": "2026-07-30",
     "description": "Panel administrasi untuk mengelola desa, konten, pengguna, tema, widget, dan integrasi data publik.",
     "releases": [
+        {
+            "version": "1.7.0",
+            "date": "2026-07-30",
+            "status": "stable",
+            "title": "Migrasi Data dan Aset Website Desa Lama",
+            "changes": [
+                "Menambahkan halaman Migrasi Website Lama untuk developer dan admin desa dengan pilihan jenis data dan konfirmasi desa tujuan.",
+                "Mengimpor Halaman, Banner, Galeri, Video, Unduhan, UMKM, BUMDes, dan Pembangunan melalui endpoint API publik website lama.",
+                "Menyalin aset remote ke storage CMS serta menormalkan referensi gambar pada isi halaman agar tidak bergantung pada server lama.",
+                "Menambahkan pencatatan riwayat dan detail item yang idempotent sehingga proses ulang memperbarui data sumber yang sama tanpa membuat duplikat.",
+                "Memastikan seluruh hasil migrasi dibatasi pada desa aktif dan cache website publik diinvalidasi setelah proses selesai."
+            ]
+        },
         {
             "version": "1.6.6",
             "date": "2026-07-16",

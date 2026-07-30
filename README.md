@@ -95,6 +95,39 @@ CMS dapat dibuka di:
 http://127.0.0.1:8000/login
 ```
 
+## Konfigurasi Nginx dan Cloudflare
+
+Livewire 4 menggunakan prefix route yang memiliki hash, misalnya
+`/livewire-9bf29492`. Preview temporary upload juga berada di bawah prefix ini
+dan URL-nya berakhir dengan ekstensi gambar. Karena itu, location Nginx untuk
+file statis seperti `jpg`, `jpeg`, `png`, `js`, dan `css` tidak boleh memotong
+request Livewire sebelum request diteruskan ke Laravel.
+
+Tambahkan isi [`deploy/nginx/livewire.conf`](deploy/nginx/livewire.conf) ke
+server block aplikasi **sebelum** location regex file statis, lalu validasi dan
+reload Nginx:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Di Cloudflare, buat Cache Rule dengan kondisi URI Path `starts with
+/livewire-` dan aksi **Bypass cache**. Setelah perubahan origin diterapkan,
+purge cache untuk `https://desa.oganilirkab.go.id/livewire-*`; respons 404 lama
+dapat tersimpan di edge walaupun Nginx sudah diperbaiki.
+
+Verifikasi dari production dengan URL route yang sedang aktif:
+
+```bash
+php artisan route:list --path=livewire
+curl -I https://desa.oganilirkab.go.id/livewire-<hash>/livewire.js
+```
+
+Route `livewire.js` harus menghasilkan `200`, sedangkan preview upload yang
+masih berlaku harus menghasilkan `200` dengan `Content-Type` gambar dan tidak
+boleh memiliki status cache Cloudflare `HIT`.
+
 ## Endpoint publik
 
 Frontend publik membaca data dari endpoint berikut:

@@ -64,6 +64,7 @@
                 ['label' => 'Widget Website', 'href' => route('admin.widgets.index'), 'icon' => 'fa-puzzle-piece', 'active' => request()->routeIs('admin.widgets.*'), 'feature' => 'widgets'],
                 ['label' => 'Pengguna', 'href' => route('admin.users.index'), 'icon' => 'fa-users-gear', 'active' => request()->routeIs('admin.users.*')],
                 ['label' => 'Statistik Pengunjung', 'href' => route('admin.visitor-statistics.index'), 'icon' => 'fa-chart-line', 'active' => request()->routeIs('admin.visitor-statistics.*')],
+                ['label' => 'Migrasi Website Lama', 'href' => route('admin.legacy-import.index'), 'icon' => 'fa-cloud-arrow-down', 'active' => request()->routeIs('admin.legacy-import.*')],
                 ['label' => 'Versi Aplikasi', 'href' => route('admin.application-versions.index'), 'icon' => 'fa-code-branch', 'active' => request()->routeIs('admin.application-versions.*')],
             ],
         ],
@@ -133,6 +134,7 @@
         str_contains($normalizedTitle, 'pengguna') => 'fa-users-gear',
         str_contains($normalizedTitle, 'profil') => 'fa-user-gear',
         str_contains($normalizedTitle, 'versi') => 'fa-code-branch',
+        str_contains($normalizedTitle, 'migrasi') => 'fa-cloud-arrow-down',
         str_contains($normalizedTitle, 'desa') => 'fa-city',
         default => 'fa-layer-group',
     };
