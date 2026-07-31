@@ -6,7 +6,7 @@
     <div class="mt-2 grid gap-1.5 text-xs sm:grid-cols-2">
         <p :class="(password || '').length >= 12 ? 'text-emerald-700' : 'text-zinc-500'">
             <i class="fa-solid mr-1" :class="(password || '').length >= 12 ? 'fa-circle-check' : 'fa-circle'"></i>
-            Minimal 12 karakter
+            Minimal 8 karakter
         </p>
         <p :class="/[a-z]/.test(password || '') ? 'text-emerald-700' : 'text-zinc-500'">
             <i class="fa-solid mr-1" :class="/[a-z]/.test(password || '') ? 'fa-circle-check' : 'fa-circle'"></i>
