@@ -24,6 +24,7 @@ final class VillageFeatures
             'maps' => ['label' => 'Peta Sebaran', 'description' => 'Fasilitas umum dan bantuan yang ditarik dari SIDESI.', 'icon' => 'fa-map-location-dot'],
             'budgets' => ['label' => 'Anggaran', 'description' => 'Transparansi APBDes dan realisasi yang ditarik dari SIDESI.', 'icon' => 'fa-chart-pie'],
             'statistics' => ['label' => 'Statistik Desa', 'description' => 'Statistik penduduk, pekerjaan, pendidikan, dan usia dari SIDESI.', 'icon' => 'fa-chart-column'],
+            'feedback' => ['label' => 'Kritik & Saran', 'description' => 'Form publik dan moderasi kritik, saran, serta rating warga.', 'icon' => 'fa-comments'],
             'widgets' => ['label' => 'Widget Website', 'description' => 'Fitur mini yang dapat dipasang pada website desa.', 'icon' => 'fa-puzzle-piece'],
         ];
     }

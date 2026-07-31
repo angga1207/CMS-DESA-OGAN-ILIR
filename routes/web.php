@@ -134,6 +134,9 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
 
         return view('admin.visitor-statistics.index');
     })->name('visitor-statistics.index');
+    Route::get('/feedback', fn () => view('admin.feedback.index'))
+        ->middleware(['admin.role:developer,admin_desa', 'village.feature:feedback'])
+        ->name('feedback.index');
 
     Route::get('/module/{module}', fn (string $module) => view('admin.module', ['module' => $module]))
         ->middleware(['admin.module', 'village.feature'])

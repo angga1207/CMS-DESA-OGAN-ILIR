@@ -170,8 +170,8 @@ final class VillageWidgetController extends Controller
     private function prayerSchedule(array $config): ?array
     {
         try {
-            $month = min(max((int) ($config['bulan'] ?? now()->month), 1), 12);
-            $year = min(max((int) ($config['tahun'] ?? now()->year), 2000), 2100);
+            $month = now()->month;
+            $year = now()->year;
             $province = (string) ($config['provinsi'] ?? 'Sumatera Selatan');
             $regency = (string) ($config['kabkota'] ?? 'Kab. Ogan ILIR');
             $data = ExternalDataCache::remember(

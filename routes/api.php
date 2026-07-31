@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\VillageBudgetController;
+use App\Http\Controllers\VillageFeedbackController;
 use App\Http\Controllers\VillageMapController;
 use App\Http\Controllers\VillageOfficialController;
 use App\Http\Controllers\VillagePublicContentController;
@@ -34,6 +35,12 @@ Route::get('/villages/{village}/budget', [VillageBudgetController::class, 'show'
 Route::get('/villages/{village}/statistics', [VillageStatisticController::class, 'show'])
     ->middleware('throttle:300,1')
     ->name('api.villages.statistics.show');
+Route::get('/villages/{village}/feedback', [VillageFeedbackController::class, 'index'])
+    ->middleware('throttle:120,1')
+    ->name('api.villages.feedback.index');
+Route::post('/villages/{village}/feedback', [VillageFeedbackController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('api.villages.feedback.store');
 Route::prefix('/villages/{village}/map')->middleware('throttle:300,1')->group(function (): void {
     Route::get('/categories', [VillageMapController::class, 'categories'])->name('api.villages.map.categories');
     Route::get('/facilities', [VillageMapController::class, 'facilities'])->name('api.villages.map.facilities');

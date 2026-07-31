@@ -2716,6 +2716,7 @@ class ExampleTest extends TestCase
 
     public function test_prayer_and_weather_widgets_return_external_api_data(): void
     {
+        $this->travelTo('2026-06-22 09:00:00');
         $this->seed();
 
         $village = DB::table('villages')->first();
@@ -2729,8 +2730,8 @@ class ExampleTest extends TestCase
                 'config' => json_encode([
                     'provinsi' => 'Sumatera Selatan',
                     'kabkota' => 'Kab. Ogan ILIR',
-                    'bulan' => '6',
-                    'tahun' => '2026',
+                    'bulan' => '12',
+                    'tahun' => '2025',
                 ]),
                 'sort_order' => 1,
                 'is_active' => true,
@@ -2797,6 +2798,8 @@ class ExampleTest extends TestCase
         $this->getJson("/api/villages/{$village->slug}/widgets")
             ->assertOk()
             ->assertJsonPath('data.header.0.type', 'prayer_schedule')
+            ->assertJsonPath('data.header.0.data.month', 6)
+            ->assertJsonPath('data.header.0.data.year', 2026)
             ->assertJsonPath('data.header.0.data.today.subuh', '04:44')
             ->assertJsonPath('data.header.0.data.location', 'Kab. Ogan ILIR, Sumatera Selatan')
             ->assertJsonPath('data.header.1.type', 'weather_information')
@@ -2814,7 +2817,7 @@ class ExampleTest extends TestCase
             && $request['adm4'] === '16.10.08.2002');
     }
 
-    public function test_weather_adm4_and_prayer_parameters_are_saved_in_widget_config(): void
+    public function test_weather_adm4_is_saved_and_prayer_period_is_automatic(): void
     {
         $this->seed();
 
@@ -2830,7 +2833,7 @@ class ExampleTest extends TestCase
 
         Livewire::test('admin.widget-manager')
             ->call('create', 'weather_information')
-            ->assertSet('config.adm4', '16.10.08.2002')
+            ->set('config.adm4', '16.10.08.2002')
             ->set('config.forecast_days', '5')
             ->call('save')
             ->assertHasNoErrors();
@@ -2839,8 +2842,6 @@ class ExampleTest extends TestCase
             ->call('create', 'prayer_schedule')
             ->set('config.provinsi', 'Sumatera Selatan')
             ->set('config.kabkota', 'Kab. Ogan ILIR')
-            ->set('config.bulan', '7')
-            ->set('config.tahun', '2026')
             ->call('save')
             ->assertHasNoErrors();
 
@@ -2860,9 +2861,9 @@ class ExampleTest extends TestCase
         $this->assertSame([
             'provinsi' => 'Sumatera Selatan',
             'kabkota' => 'Kab. Ogan ILIR',
-            'bulan' => '7',
-            'tahun' => '2026',
         ], $prayerConfig);
+        $this->assertArrayNotHasKey('bulan', WidgetCatalog::get('prayer_schedule')['fields']);
+        $this->assertArrayNotHasKey('tahun', WidgetCatalog::get('prayer_schedule')['fields']);
     }
 
     public function test_disabled_widget_feature_blocks_admin_and_returns_empty_public_widgets(): void

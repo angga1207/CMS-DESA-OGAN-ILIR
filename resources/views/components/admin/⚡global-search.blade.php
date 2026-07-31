@@ -367,6 +367,7 @@ new class extends Component {
             ['title' => 'Versi Aplikasi', 'subtitle' => 'Metadata versi backend dan frontend', 'href' => route('admin.application-versions.index'), 'icon' => 'fa-code-branch', 'roles' => ['developer', 'admin_desa']],
             ['title' => 'Manajemen Desa', 'subtitle' => 'Kelola daftar desa', 'href' => route('admin.villages.index'), 'icon' => 'fa-city', 'roles' => ['developer']],
             ['title' => 'Statistik Pengunjung', 'subtitle' => 'Analitik kunjungan website publik', 'href' => route('admin.visitor-statistics.index'), 'icon' => 'fa-chart-line', 'roles' => ['developer', 'admin_desa']],
+            ['title' => 'Kritik & Saran', 'subtitle' => 'Moderasi masukan dan rating warga', 'href' => route('admin.feedback.index'), 'icon' => 'fa-comments', 'feature' => 'feedback', 'roles' => ['developer', 'admin_desa']],
         ];
     }
 

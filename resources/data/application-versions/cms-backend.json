@@ -1,11 +1,24 @@
 {
     "application": "CMS Desa",
     "component": "Backend CMS",
-    "current_version": "1.7.1",
+    "current_version": "1.7.2",
     "framework": "Laravel 13",
     "released_at": "2026-07-31",
     "description": "Panel administrasi untuk mengelola desa, konten, pengguna, tema, widget, dan integrasi data publik.",
     "releases": [
+        {
+            "version": "1.7.2",
+            "date": "2026-07-31",
+            "status": "stable",
+            "title": "Kritik & Saran dan Moderasi Warga",
+            "changes": [
+                "Menambahkan modul Kritik & Saran per desa dengan data nama, WhatsApp, email, rating 1 sampai 5 bintang, dan pesan warga.",
+                "Menambahkan alur moderasi Menunggu, Dipublikasi, dan Ditolak beserta pencarian, filter status, filter rating, serta penghapusan data.",
+                "Menambahkan sensor kata otomatis, rate limit, honeypot, validasi input, dan perlindungan tenant pada pengiriman publik.",
+                "Menambahkan toggle operasional untuk Admin Desa dan override fitur untuk Developer melalui Manajemen Desa.",
+                "Menambahkan endpoint publik yang hanya mengembalikan data terpublikasi tanpa mengekspos email dan nomor WhatsApp warga."
+            ]
+        },
         {
             "version": "1.7.1",
             "date": "2026-07-31",

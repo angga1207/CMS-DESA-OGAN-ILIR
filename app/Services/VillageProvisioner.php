@@ -122,6 +122,7 @@ final class VillageProvisioner
             'theme_text' => ['#17221f', 'text'],
             'font_style' => ['classic', 'text'],
             'home_shortcuts_enabled' => ['1', 'boolean'],
+            'feedback_enabled' => ['1', 'boolean'],
             'home_shortcuts' => [json_encode([
                 ['label' => 'Tentang Desa', 'url' => '/tentang'],
                 ['label' => 'Data & Statistik', 'url' => '/statistik'],
@@ -144,11 +145,11 @@ final class VillageProvisioner
 
         $widgets = [
             ['announcement_ticker', 'Pengumuman Layanan Desa', 'header', ['text' => "Selamat datang di portal resmi {$name}. Pantau pengumuman, data desa, dan layanan publik dari halaman ini.", 'link_url' => '/artikel', 'link_label' => 'Baca Berita'], 1],
-            ['prayer_schedule', 'Jadwal Salat', 'header', ['provinsi' => 'Sumatera Selatan', 'kabkota' => 'Kab. Ogan ILIR', 'bulan' => (string) now()->month, 'tahun' => (string) now()->year], 2, false],
+            ['prayer_schedule', 'Jadwal Salat', 'header', ['provinsi' => 'Sumatera Selatan', 'kabkota' => 'Kab. Ogan ILIR'], 2, false],
             ['weather_information', 'Informasi Cuaca', 'header', ['adm4' => $adm4, 'forecast_days' => '3'], 3, false],
             ['announcement_ticker', 'Info Prioritas Pembangunan', 'below_banner', ['text' => 'Musyawarah desa, transparansi anggaran, dan progres pembangunan dapat dipantau melalui kanal informasi publik.', 'link_url' => '/pembangunan', 'link_label' => 'Lihat Pembangunan'], 1],
             ['latest_articles', 'Artikel Terbaru', 'sidebar', ['limit' => '5', 'show_thumbnail' => true], 1],
-            ['complaint_link', 'Widget Melayang', 'floating_left', ['button_label' => 'Buka Tautan', 'url' => 'https://wa.me/6281200000000', 'open_new_tab' => true], 1],
+            ['complaint_link', 'Kritik & Saran', 'floating_left', ['button_label' => 'Kritik & Saran', 'url' => '/kritik-saran', 'open_new_tab' => false], 1],
             ['whatsapp_button', 'Hubungi Desa', 'floating_right', ['phone' => '6281200000000', 'button_label' => 'Hubungi Desa', 'message' => "Halo, saya ingin bertanya mengenai layanan {$name}."], 1],
             ['visitor_statistics', 'Statistik Pengunjung', 'footer', ['period_days' => '30', 'show_unique' => true, 'show_total' => true], 1],
             ['office_hours', 'Jam Pelayanan', 'footer', ['weekdays' => '08.00 - 15.30 WIB', 'saturday' => 'Tutup', 'sunday' => 'Tutup', 'note' => 'Pelayanan mengikuti hari kerja pemerintah.'], 2],
@@ -283,7 +284,7 @@ final class VillageProvisioner
             'updated_at' => now(),
         ]);
 
-        foreach ([['Beranda', '/', 1], ['Berita', '/artikel', 3], ['Desa Cantik', '/desa-cantik', 4], ['Statistik', '/statistik', 5], ['Anggaran', '/anggaran', 6], ['UMKM', '/umkm', 7], ['BUMDES', '/bumdes', 8], ['Galeri', '/galeri', 9], ['Pembangunan', '/pembangunan', 10], ['Peta', '/peta-sebaran', 11], ['Download', '/download', 12]] as [$label, $url, $sortOrder]) {
+        foreach ([['Beranda', '/', 1], ['Berita', '/artikel', 3], ['Desa Cantik', '/desa-cantik', 4], ['Statistik', '/statistik', 5], ['Anggaran', '/anggaran', 6], ['UMKM', '/umkm', 7], ['BUMDES', '/bumdes', 8], ['Galeri', '/galeri', 9], ['Pembangunan', '/pembangunan', 10], ['Peta', '/peta-sebaran', 11], ['Download', '/download', 12], ['Kritik & Saran', '/kritik-saran', 13]] as [$label, $url, $sortOrder]) {
             DB::table('navigation_items')->insert([
                 'village_id' => $villageId,
                 'menu_id' => $menuId,

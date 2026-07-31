@@ -34,8 +34,6 @@ return [
         'fields' => [
             'provinsi' => ['label' => 'Provinsi', 'type' => 'text', 'rule' => 'required|string|max:120', 'default' => 'Sumatera Selatan'],
             'kabkota' => ['label' => 'Kabupaten/Kota', 'type' => 'text', 'rule' => 'required|string|max:120', 'default' => 'Kab. Ogan ILIR'],
-            'bulan' => ['label' => 'Bulan', 'type' => 'number', 'rule' => 'required|integer|between:1,12', 'default' => (string) date('n')],
-            'tahun' => ['label' => 'Tahun', 'type' => 'number', 'rule' => 'required|integer|between:2000,2100', 'default' => (string) date('Y')],
         ],
     ],
     'weather_information' => [
