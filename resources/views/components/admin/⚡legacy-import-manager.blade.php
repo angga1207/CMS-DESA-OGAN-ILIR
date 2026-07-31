@@ -6,7 +6,8 @@ use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public int $villageId;
 
     public string $sourceUrl = '';
@@ -21,6 +22,8 @@ new class extends Component {
 
     public function mount(): void
     {
+        abort_unless(auth()->user()?->role === 'developer', 403);
+
         $this->villageId = CurrentVillage::id();
         $this->sourceUrl = (string) config('legacy-import.default_source_url');
         $this->selectedTypes = array_keys(config('legacy-import.types', []));
@@ -29,6 +32,8 @@ new class extends Component {
 
     public function import(LegacyWebsiteImporter $importer): void
     {
+        abort_unless(auth()->user()?->role === 'developer', 403);
+
         $data = $this->validate([
             'sourceUrl' => ['required', 'url:https', 'max:2048'],
             'selectedTypes' => ['required', 'array', 'min:1'],
@@ -52,7 +57,7 @@ new class extends Component {
             LivewireAlert::title('Migrasi selesai')
                 ->text('Data API lama sudah diproses. Periksa rekap untuk detail hasilnya.')
                 ->success()->show();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             report($exception);
             $this->loadRuns();
             $this->addError('sourceUrl', 'Migrasi gagal: '.$exception->getMessage());

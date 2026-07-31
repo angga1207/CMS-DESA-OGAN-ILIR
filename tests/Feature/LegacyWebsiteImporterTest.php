@@ -64,7 +64,7 @@ final class LegacyWebsiteImporterTest extends TestCase
         );
     }
 
-    public function test_admin_can_open_import_page_but_editor_cannot(): void
+    public function test_only_developer_can_open_import_page(): void
     {
         $villageId = DB::table('villages')->insertGetId([
             'name' => 'Meranjat Ilir',
@@ -72,10 +72,12 @@ final class LegacyWebsiteImporterTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        $developer = User::factory()->create(['role' => 'developer']);
         $admin = User::factory()->create(['village_id' => $villageId, 'role' => 'admin_desa']);
         $editor = User::factory()->create(['village_id' => $villageId, 'role' => 'editor']);
 
-        $this->actingAs($admin)->get('/admin/legacy-import')->assertOk()->assertSee('Migrasi Website Lama');
+        $this->actingAs($developer)->get('/admin/legacy-import')->assertOk()->assertSee('Migrasi Website Lama');
+        $this->actingAs($admin)->get('/admin/legacy-import')->assertForbidden();
         $this->actingAs($editor)->get('/admin/legacy-import')->assertForbidden();
     }
 }

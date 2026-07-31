@@ -64,7 +64,6 @@
                 ['label' => 'Widget Website', 'href' => route('admin.widgets.index'), 'icon' => 'fa-puzzle-piece', 'active' => request()->routeIs('admin.widgets.*'), 'feature' => 'widgets'],
                 ['label' => 'Pengguna', 'href' => route('admin.users.index'), 'icon' => 'fa-users-gear', 'active' => request()->routeIs('admin.users.*')],
                 ['label' => 'Statistik Pengunjung', 'href' => route('admin.visitor-statistics.index'), 'icon' => 'fa-chart-line', 'active' => request()->routeIs('admin.visitor-statistics.*')],
-                ['label' => 'Migrasi Website Lama', 'href' => route('admin.legacy-import.index'), 'icon' => 'fa-cloud-arrow-down', 'active' => request()->routeIs('admin.legacy-import.*')],
                 ['label' => 'Versi Aplikasi', 'href' => route('admin.application-versions.index'), 'icon' => 'fa-code-branch', 'active' => request()->routeIs('admin.application-versions.*')],
             ],
         ],
@@ -83,6 +82,7 @@
             'icon' => 'fa-code',
             'links' => [
                 ['label' => 'Manajemen Desa', 'href' => route('admin.villages.index'), 'icon' => 'fa-city', 'active' => request()->routeIs('admin.villages.*')],
+                ['label' => 'Migrasi Website Lama', 'href' => route('admin.legacy-import.index'), 'icon' => 'fa-cloud-arrow-down', 'active' => request()->routeIs('admin.legacy-import.*')],
             ],
         ];
     }

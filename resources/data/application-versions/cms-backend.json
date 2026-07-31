@@ -1,11 +1,23 @@
 {
     "application": "CMS Desa",
     "component": "Backend CMS",
-    "current_version": "1.7.0",
+    "current_version": "1.7.1",
     "framework": "Laravel 13",
-    "released_at": "2026-07-30",
+    "released_at": "2026-07-31",
     "description": "Panel administrasi untuk mengelola desa, konten, pengguna, tema, widget, dan integrasi data publik.",
     "releases": [
+        {
+            "version": "1.7.1",
+            "date": "2026-07-31",
+            "status": "stable",
+            "title": "Patch Akses Migrasi dan Halaman Custom Publik",
+            "changes": [
+                "Membatasi halaman dan proses Migrasi Website Lama khusus untuk developer melalui middleware route serta otorisasi pada komponen Livewire.",
+                "Memindahkan menu Migrasi Website Lama ke grup Developer agar tidak ditampilkan kepada Admin Desa dan Editor.",
+                "Menambahkan pengujian regresi yang memastikan Developer dapat membuka fitur migrasi sementara Admin Desa dan Editor menerima respons 403.",
+                "Mencatat dukungan frontend agar halaman custom hasil migrasi yang sudah published dapat dibuka langsung tanpa wajib ditambahkan ke Menu Dinamis."
+            ]
+        },
         {
             "version": "1.7.0",
             "date": "2026-07-30",

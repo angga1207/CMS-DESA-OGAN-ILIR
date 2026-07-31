@@ -75,7 +75,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
     Route::get('/settings', fn () => view('admin.settings.index'))->middleware('admin.role:developer,admin_desa')->name('settings.index');
     Route::get('/styling', fn () => view('admin.styling.index'))->middleware('admin.role:developer,admin_desa')->name('styling.index');
     Route::get('/home-shortcuts', fn () => view('admin.home-shortcuts.index'))->middleware('admin.role:developer,admin_desa')->name('home-shortcuts.index');
-    Route::get('/legacy-import', fn () => view('admin.legacy-import.index'))->middleware('admin.role:developer,admin_desa')->name('legacy-import.index');
+    Route::get('/legacy-import', fn () => view('admin.legacy-import.index'))->middleware('admin.role:developer')->name('legacy-import.index');
     Route::get('/users', fn () => view('admin.users.index'))->middleware('admin.role:developer,admin_desa')->name('users.index');
     Route::get('/application-versions', function (Request $request) {
         $versions = ApplicationVersions::all();

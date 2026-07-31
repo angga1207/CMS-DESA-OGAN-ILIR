@@ -639,7 +639,7 @@ class ExampleTest extends TestCase
             ->assertDontSee('Hapus Versi');
 
         $this->actingAs($developer)
-            ->get('/admin/application-versions?backend_page=2')
+            ->get('/admin/application-versions?backend_page=3')
             ->assertOk()
             ->assertSee('v1.4.1')
             ->assertSee('v1.6.4');
