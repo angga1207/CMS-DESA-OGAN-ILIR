@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\PasswordPolicy;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
@@ -39,6 +40,10 @@ new class extends Component
             'profileForm.name' => ['required', 'string', 'max:255'],
             'profileForm.username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($user->id)],
             'profileForm.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+        ],[],[
+            'profileForm.name' => 'Nama Lengkap',
+            'profileForm.username' => 'Username',
+            'profileForm.email' => 'Email',
         ])['profileForm'];
 
         $user->forceFill($data)->save();
@@ -54,7 +59,11 @@ new class extends Component
 
         $data = $this->validate([
             'passwordForm.current_password' => ['required', 'current_password'],
-            'passwordForm.password' => ['required', 'string', 'min:8', 'confirmed'],
+            'passwordForm.password' => PasswordPolicy::rules(),
+        ],[],[
+            'passwordForm.current_password' => 'Password Saat Ini',
+            'passwordForm.password' => 'Password Baru',
+            'passwordForm.password_confirmation' => 'Konfirmasi Password Baru',
         ])['passwordForm'];
 
         $user->forceFill([
@@ -103,6 +112,7 @@ new class extends Component
         <form wire:submit="updatePassword" class="space-y-4 p-5">
             <x-admin.input label="Password Saat Ini" model="passwordForm.current_password" type="password" />
             <x-admin.input label="Password Baru" model="passwordForm.password" type="password" />
+            <x-admin.password-guidance model="passwordForm.password" />
             <x-admin.input label="Konfirmasi Password Baru" model="passwordForm.password_confirmation" type="password" />
 
             <div class="flex justify-end border-t border-zinc-200 pt-5">

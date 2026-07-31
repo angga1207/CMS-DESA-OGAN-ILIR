@@ -79,7 +79,8 @@ class ExampleTest extends TestCase
             ->assertSee('images/cms/login-background.jpg')
             ->assertSee('images/cms/ogan-ilir-logo.gif')
             ->assertSee('Masuk CMS Desa')
-            ->assertSee('Masuk Panel Admin');
+            ->assertSee('Masuk Panel Admin')
+            ->assertSee('Tampilkan password');
     }
 
     public function test_login_resets_captcha_input_when_captcha_is_wrong(): void
@@ -281,7 +282,10 @@ class ExampleTest extends TestCase
             ->assertStatus(200)
             ->assertSee('Profil User')
             ->assertSee('Ganti Password')
-            ->assertSee('Password Saat Ini');
+            ->assertSee('Password Saat Ini')
+            ->assertSee('Rekomendasi password kuat')
+            ->assertSee('Minimal 12 karakter')
+            ->assertSee('Tampilkan password');
 
         $this->actingAs($admin)->get('/admin/villages')
             ->assertStatus(200)
@@ -559,7 +563,7 @@ class ExampleTest extends TestCase
             ->set('form.email', 'editor.konfirmasi@test.local')
             ->set('form.role', 'editor')
             ->set('form.village_id', $villageId)
-            ->set('form.password', 'password-rahasia')
+            ->set('form.password', 'Password-Rahasia1!')
             ->set('form.password_confirmation', 'password-berbeda')
             ->call('save')
             ->assertHasErrors(['form.password']);
@@ -573,14 +577,37 @@ class ExampleTest extends TestCase
             ->set('form.email', 'editor.konfirmasi@test.local')
             ->set('form.role', 'editor')
             ->set('form.village_id', $villageId)
-            ->set('form.password', 'password-rahasia')
-            ->set('form.password_confirmation', 'password-rahasia')
+            ->set('form.password', 'Password-Rahasia1!')
+            ->set('form.password_confirmation', 'Password-Rahasia1!')
             ->call('save')
             ->assertHasNoErrors();
 
         $user = User::query()->where('username', 'editor_konfirmasi')->first();
         $this->assertNotNull($user);
-        $this->assertTrue(Hash::check('password-rahasia', $user->password));
+        $this->assertTrue(Hash::check('Password-Rahasia1!', $user->password));
+    }
+
+    public function test_user_manager_rejects_password_without_required_strength(): void
+    {
+        $this->seed();
+        $developer = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->value('id');
+        $this->actingAs($developer);
+
+        Livewire::test('admin.user-manager')
+            ->call('create')
+            ->assertSee('Rekomendasi password kuat')
+            ->set('form.name', 'Editor Password Lemah')
+            ->set('form.username', 'editor_password_lemah')
+            ->set('form.email', 'editor.password.lemah@test.local')
+            ->set('form.role', 'editor')
+            ->set('form.village_id', $villageId)
+            ->set('form.password', 'passwordpanjang')
+            ->set('form.password_confirmation', 'passwordpanjang')
+            ->call('save')
+            ->assertHasErrors(['form.password']);
+
+        $this->assertDatabaseMissing('users', ['username' => 'editor_password_lemah']);
     }
 
     public function test_developer_can_switch_active_village_from_header(): void
@@ -668,16 +695,16 @@ class ExampleTest extends TestCase
         ]);
 
         Livewire::test('admin.profile-manager')
-            ->set('passwordForm.current_password', 'password')
-            ->set('passwordForm.password', 'password-baru-aman')
-            ->set('passwordForm.password_confirmation', 'password-baru-aman')
+            ->set('passwordForm.current_password', 'arungboto')
+            ->set('passwordForm.password', 'Password-Baru1!')
+            ->set('passwordForm.password_confirmation', 'Password-Baru1!')
             ->call('updatePassword')
             ->assertHasNoErrors()
             ->assertSet('passwordForm.current_password', '')
             ->assertSet('passwordForm.password', '')
             ->assertSet('passwordForm.password_confirmation', '');
 
-        $this->assertTrue(Hash::check('password-baru-aman', $user->refresh()->password));
+        $this->assertTrue(Hash::check('Password-Baru1!', $user->refresh()->password));
     }
 
     public function test_profile_password_requires_current_password(): void
@@ -689,12 +716,28 @@ class ExampleTest extends TestCase
 
         Livewire::test('admin.profile-manager')
             ->set('passwordForm.current_password', 'password-salah')
-            ->set('passwordForm.password', 'password-baru-aman')
-            ->set('passwordForm.password_confirmation', 'password-baru-aman')
+            ->set('passwordForm.password', 'Password-Baru1!')
+            ->set('passwordForm.password_confirmation', 'Password-Baru1!')
             ->call('updatePassword')
             ->assertHasErrors(['passwordForm.current_password']);
 
-        $this->assertTrue(Hash::check('password', $user->refresh()->password));
+        $this->assertTrue(Hash::check('arungboto', $user->refresh()->password));
+    }
+
+    public function test_profile_rejects_password_without_required_strength(): void
+    {
+        $this->seed();
+        $user = User::query()->where('username', 'developer')->first();
+        $this->actingAs($user);
+
+        Livewire::test('admin.profile-manager')
+            ->set('passwordForm.current_password', 'arungboto')
+            ->set('passwordForm.password', 'PasswordTanpaSimbol1')
+            ->set('passwordForm.password_confirmation', 'PasswordTanpaSimbol1')
+            ->call('updatePassword')
+            ->assertHasErrors(['passwordForm.password']);
+
+        $this->assertTrue(Hash::check('arungboto', $user->refresh()->password));
     }
 
     public function test_non_developer_cannot_switch_active_village(): void

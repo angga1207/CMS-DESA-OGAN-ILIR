@@ -123,7 +123,7 @@ new class extends Component {
                         class="size-14 shrink-0 rounded-md bg-white object-contain p-1.5 shadow-sm ring-1 ring-zinc-200">
                 </div>
 
-                <form wire:submit="login" class="mt-6 space-y-4">
+                <form wire:submit="login" class="mt-6 space-y-4" x-data="{ showPassword: false }">
                     <div>
                         <label for="username" class="text-sm font-bold">Username</label>
                         <input id="username" type="text" wire:model="username"
@@ -136,9 +136,17 @@ new class extends Component {
 
                     <div>
                         <label for="password" class="text-sm font-bold">Password</label>
-                        <input id="password" type="password" wire:model="password"
-                            class="mt-1 min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
-                            autocomplete="current-password" placeholder="Masukkan password">
+                        <div class="relative mt-1">
+                            <input id="password" :type="showPassword ? 'text' : 'password'" wire:model="password"
+                                class="min-h-11 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 pr-12 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
+                                autocomplete="current-password" placeholder="Masukkan password">
+                            <button type="button" x-on:click="showPassword = !showPassword"
+                                class="absolute inset-y-0 right-0 grid w-11 place-items-center text-zinc-500 transition hover:text-zinc-900"
+                                :aria-label="showPassword ? 'Sembunyikan password' : 'Tampilkan password'"
+                                :title="showPassword ? 'Sembunyikan password' : 'Tampilkan password'">
+                                <i class="fa-solid" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
                         @error('password')
                             <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                         @enderror

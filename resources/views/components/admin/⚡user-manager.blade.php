@@ -2,25 +2,35 @@
 
 use App\Models\User;
 use App\Support\CurrentVillage;
+use App\Support\PasswordPolicy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     public array $users = [];
+
     public array $villages = [];
+
     public bool $showModal = false;
+
     public int $villageId = 1;
+
     public string $search = '';
+
     public string $roleFilter = '';
+
     public string $villageFilter = '';
+
     private array $roleLabels = [
         'developer' => 'Developer',
         'admin_desa' => 'Admin Desa',
         'editor' => 'Editor',
         'pengawas' => 'Pengawas',
     ];
+
     public array $form = [
         'id' => null,
         'name' => '',
@@ -38,7 +48,7 @@ new class extends Component {
         $this->villages = DB::table('villages')
             ->orderBy('name')
             ->get(['id', 'name'])
-            ->map(fn($row): array => (array) $row)
+            ->map(fn ($row): array => (array) $row)
             ->all();
         $this->loadData();
     }
@@ -67,11 +77,11 @@ new class extends Component {
     public function edit(int $id): void
     {
         $user = User::query()
-            ->when(!$this->isDeveloper(), fn($query) => $query->where('role', '!=', 'developer'))
-            ->when(!$this->isDeveloper(), fn($query) => $query->where('village_id', $this->villageId))
+            ->when(! $this->isDeveloper(), fn ($query) => $query->where('role', '!=', 'developer'))
+            ->when(! $this->isDeveloper(), fn ($query) => $query->where('village_id', $this->villageId))
             ->find($id);
 
-        if (!$user) {
+        if (! $user) {
             return;
         }
 
@@ -96,7 +106,7 @@ new class extends Component {
 
     public function save(): void
     {
-        if (!$this->isDeveloper() && $this->form['role'] === 'developer') {
+        if (! $this->isDeveloper() && $this->form['role'] === 'developer') {
             abort(403);
         }
 
@@ -106,11 +116,11 @@ new class extends Component {
 
         $data = $this->validate([
             'form.name' => ['required', 'string', 'max:255'],
-            'form.username' => ['required', 'string', 'max:255', 'unique:users,username,' . ($id ?: 'NULL') . ',id'],
-            'form.email' => ['required', 'email', 'max:255', 'unique:users,email,' . ($id ?: 'NULL') . ',id'],
-            'form.role' => ['required', 'in:' . implode(',', array_keys($this->availableRoles()))],
+            'form.username' => ['required', 'string', 'max:255', 'unique:users,username,'.($id ?: 'NULL').',id'],
+            'form.email' => ['required', 'email', 'max:255', 'unique:users,email,'.($id ?: 'NULL').',id'],
+            'form.role' => ['required', 'in:'.implode(',', array_keys($this->availableRoles()))],
             'form.village_id' => [$requiresVillage ? 'required' : 'nullable', 'integer', 'exists:villages,id'],
-            'form.password' => [$id ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
+            'form.password' => PasswordPolicy::rules(! $id),
             'form.password_confirmation' => ['nullable', 'string'],
         ])['form'];
 
@@ -131,8 +141,8 @@ new class extends Component {
 
         if ($id) {
             User::query()
-                ->when(!$this->isDeveloper(), fn($query) => $query->where('role', '!=', 'developer'))
-                ->when(!$this->isDeveloper(), fn($query) => $query->where('village_id', $this->villageId))
+                ->when(! $this->isDeveloper(), fn ($query) => $query->where('role', '!=', 'developer'))
+                ->when(! $this->isDeveloper(), fn ($query) => $query->where('village_id', $this->villageId))
                 ->where('id', $id)
                 ->update($payload);
         } else {
@@ -152,8 +162,8 @@ new class extends Component {
         }
 
         User::query()
-            ->when(!$this->isDeveloper(), fn($query) => $query->where('role', '!=', 'developer'))
-            ->when(!$this->isDeveloper(), fn($query) => $query->where('village_id', $this->villageId))
+            ->when(! $this->isDeveloper(), fn ($query) => $query->where('role', '!=', 'developer'))
+            ->when(! $this->isDeveloper(), fn ($query) => $query->where('village_id', $this->villageId))
             ->where('id', $id)
             ->delete();
 
@@ -174,10 +184,10 @@ new class extends Component {
     {
         $this->users = DB::table('users')
             ->leftJoin('villages', 'users.village_id', '=', 'villages.id')
-            ->when(!$this->isDeveloper(), fn($query) => $query->where('role', '!=', 'developer'))
-            ->when(!$this->isDeveloper(), fn($query) => $query->where('users.village_id', $this->villageId))
+            ->when(! $this->isDeveloper(), fn ($query) => $query->where('role', '!=', 'developer'))
+            ->when(! $this->isDeveloper(), fn ($query) => $query->where('users.village_id', $this->villageId))
             ->when(trim($this->search) !== '', function ($query): void {
-                $search = '%' . strtolower(trim($this->search)) . '%';
+                $search = '%'.strtolower(trim($this->search)).'%';
                 $query->where(function ($query) use ($search): void {
                     $query
                         ->whereRaw('LOWER(users.name) LIKE ?', [$search])
@@ -186,11 +196,11 @@ new class extends Component {
                         ->orWhereRaw('LOWER(COALESCE(villages.name, \'\')) LIKE ?', [$search]);
                 });
             })
-            ->when($this->roleFilter !== '', fn($query) => $query->where('users.role', $this->roleFilter))
-            ->when($this->isDeveloper() && $this->villageFilter !== '', fn($query) => $query->where('users.village_id', $this->villageFilter))
+            ->when($this->roleFilter !== '', fn ($query) => $query->where('users.role', $this->roleFilter))
+            ->when($this->isDeveloper() && $this->villageFilter !== '', fn ($query) => $query->where('users.village_id', $this->villageFilter))
             ->orderBy('users.name')
             ->get(['users.id', 'users.name', 'users.username', 'users.email', 'users.role', 'users.village_id', 'users.created_at', 'villages.name as village_name'])
-            ->map(fn(object $user): array => (array) $user)
+            ->map(fn (object $user): array => (array) $user)
             ->all();
     }
 
@@ -353,6 +363,9 @@ new class extends Component {
                         @error('form.password')
                             <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                         @enderror
+                    </div>
+                    <div class="sm:col-span-2">
+                        <x-admin.password-guidance model="form.password" />
                     </div>
                     <div>
                         <label class="flex items-center gap-2 text-sm font-bold">

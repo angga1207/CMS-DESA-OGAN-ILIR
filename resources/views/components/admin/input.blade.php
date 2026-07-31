@@ -22,10 +22,21 @@
         };
 @endphp
 
-<div class="{{ $class }}">
+<div class="{{ $class }}" @if ($type === 'password') x-data="{ passwordVisible: false }" @endif>
     <label class="admin-field-label"><i class="fa-solid {{ $resolvedIcon }} text-amber-600"></i>{{ $label }}</label>
-    <input type="{{ $type }}" wire:model.live="{{ $model }}" placeholder="{{ $resolvedPlaceholder }}"
-        {{ $attributes->except('class')->merge(['class' => 'admin-control mt-1 read-only:cursor-not-allowed']) }}>
+    <div class="{{ $type === 'password' ? 'relative mt-1' : '' }}">
+        <input @if ($type === 'password') :type="passwordVisible ? 'text' : 'password'" @else type="{{ $type }}" @endif
+            wire:model.live="{{ $model }}" placeholder="{{ $resolvedPlaceholder }}"
+            {{ $attributes->except('class')->merge(['class' => 'admin-control '.($type === 'password' ? 'pr-12' : 'mt-1').' read-only:cursor-not-allowed']) }}>
+        @if ($type === 'password')
+            <button type="button" x-on:click="passwordVisible = !passwordVisible"
+                class="absolute inset-y-0 right-0 grid w-11 place-items-center text-zinc-500 transition hover:text-zinc-900"
+                :aria-label="passwordVisible ? 'Sembunyikan password' : 'Tampilkan password'"
+                :title="passwordVisible ? 'Sembunyikan password' : 'Tampilkan password'">
+                <i class="fa-solid" :class="passwordVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
+            </button>
+        @endif
+    </div>
     @error($model)
         <div class="admin-error">{{ $message }}</div>
     @enderror
