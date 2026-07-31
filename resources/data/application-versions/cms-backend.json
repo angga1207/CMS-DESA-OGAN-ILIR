@@ -13,7 +13,7 @@
             "title": "Password Kuat dan Kontrol Show/Hide",
             "changes": [
                 "Menambahkan tombol tampilkan dan sembunyikan password pada halaman login, Manajemen Pengguna, dan Profil User.",
-                "Menerapkan kebijakan password terpusat minimal 12 karakter yang wajib mengandung huruf besar, huruf kecil, angka, dan simbol.",
+                "Menerapkan kebijakan password terpusat minimal 8 karakter yang wajib mengandung huruf besar, huruf kecil, angka, dan simbol.",
                 "Menambahkan checklist rekomendasi interaktif yang berubah saat pengguna mengetik password baru.",
                 "Menerapkan aturan kuat pada pembuatan akun dan perubahan password tanpa menghalangi login akun lama.",
                 "Menambahkan pengujian untuk password kuat, konfirmasi password, serta penolakan password yang tidak memenuhi komposisi."

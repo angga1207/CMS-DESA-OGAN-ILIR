@@ -284,7 +284,7 @@ class ExampleTest extends TestCase
             ->assertSee('Ganti Password')
             ->assertSee('Password Saat Ini')
             ->assertSee('Rekomendasi password kuat')
-            ->assertSee('Minimal 12 karakter')
+            ->assertSee('Minimal 8 karakter')
             ->assertSee('Tampilkan password');
 
         $this->actingAs($admin)->get('/admin/villages')
