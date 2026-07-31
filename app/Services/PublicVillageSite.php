@@ -73,6 +73,7 @@ final class PublicVillageSite
                 'phone' => $village->phone,
                 'email' => $village->email,
                 'website_url' => $village->website_url,
+                'public_hostname' => $village->public_hostname,
                 'latitude' => $village->latitude,
                 'longitude' => $village->longitude,
                 'logo_url' => $village->logo_url,

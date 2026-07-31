@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PublicTenantController;
 use App\Http\Controllers\VillageBudgetController;
 use App\Http\Controllers\VillageFeedbackController;
 use App\Http\Controllers\VillageMapController;
@@ -11,6 +12,9 @@ use App\Http\Controllers\VillageVisitorController;
 use App\Http\Controllers\VillageWidgetController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/sites/resolve', [PublicTenantController::class, 'resolve'])
+    ->middleware('throttle:300,1')
+    ->name('api.sites.resolve');
 Route::get('/villages/{village}', [VillageVisitorController::class, 'show'])
     ->name('api.villages.show');
 Route::get('/villages/{village}/site', [VillagePublicSiteController::class, 'show'])

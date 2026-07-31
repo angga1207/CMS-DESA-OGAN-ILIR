@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Services\SidesiClient;
+use App\Services\TenantResolver;
 use App\Services\VillageProvisioner;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -13,33 +14,33 @@ class OganIlirVillagesFromSidesiSeeder extends Seeder
     public function run(): void
     {
         $payload = app(SidesiClient::class)->skpd();
-        $rows = collect($payload['data'] ?? [])->filter(fn($row): bool => is_array($row));
+        $rows = collect($payload['data'] ?? [])->filter(fn ($row): bool => is_array($row));
 
         // only take Desa Tanjung Lubuk, Desa Tanjung Dayang Utara, Desa Meranjat Ilir
-        $rows = $rows->filter(fn(array $row): bool => in_array($this->value($row['nama_skpd'] ?? null), ['DESA TANJUNG LUBUK', 'DESA TANJUNG DAYANG UTARA', 'DESA MERANJAT ILIR'], true));
+        $rows = $rows->filter(fn (array $row): bool => in_array($this->value($row['nama_skpd'] ?? null), ['DESA TANJUNG LUBUK', 'DESA TANJUNG DAYANG UTARA', 'DESA MERANJAT ILIR'], true));
 
         $authorId = DB::table('users')->where('role', 'developer')->orderBy('id')->value('id');
         $provisioned = 0;
 
         $districtsBySkpdId = $rows
-            ->filter(fn(array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'kecamatan')
-            ->mapWithKeys(fn(array $row): array => [
+            ->filter(fn (array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'kecamatan')
+            ->mapWithKeys(fn (array $row): array => [
                 (string) ($row['id_skpd'] ?? '') => $this->districtName($row['nama_skpd'] ?? null),
             ])
             ->filter()
             ->all();
 
         $districtsByCode = $rows
-            ->filter(fn(array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'kecamatan')
-            ->mapWithKeys(fn(array $row): array => [
+            ->filter(fn (array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'kecamatan')
+            ->mapWithKeys(fn (array $row): array => [
                 (string) ($row['id_kecamatan'] ?? '') => $this->districtName($row['nama_skpd'] ?? null),
             ])
             ->filter()
             ->all();
 
         $villages = $rows
-            ->filter(fn(array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'desa')
-            ->filter(fn(array $row): bool => filled($this->value($row['id_desa'] ?? null)))
+            ->filter(fn (array $row): bool => $this->clean($row['jenis_skpd'] ?? null) === 'desa')
+            ->filter(fn (array $row): bool => filled($this->value($row['id_desa'] ?? null)))
             ->sortBy('nama_skpd')
             ->values();
 
@@ -54,6 +55,7 @@ class OganIlirVillagesFromSidesiSeeder extends Seeder
                 return;
             }
 
+            $websiteUrl = $this->url($row['website'] ?? null);
             $payload = [
                 'name' => $name,
                 'slug' => $this->slug($name, $district, $sidesiVillageId),
@@ -63,7 +65,10 @@ class OganIlirVillagesFromSidesiSeeder extends Seeder
                 'address' => $this->address($row['alamat_skpd'] ?? null, $district),
                 'phone' => $this->value($row['telepon_skpd'] ?? null),
                 'email' => $this->email($row['email_skpd'] ?? null),
-                'website_url' => $this->url($row['website'] ?? null),
+                'website_url' => $websiteUrl,
+                'public_hostname' => app(TenantResolver::class)->normalizeHostname(
+                    (string) parse_url((string) $websiteUrl, PHP_URL_HOST),
+                ),
                 'latitude' => $this->decimal($row['latitude'] ?? null),
                 'longitude' => $this->decimal($row['longitude'] ?? null),
                 'description' => $this->description($name, $district),
@@ -162,7 +167,7 @@ class OganIlirVillagesFromSidesiSeeder extends Seeder
             return $candidate;
         }
 
-        $candidate = trim($base . '-' . Str::slug((string) $district), '-');
+        $candidate = trim($base.'-'.Str::slug((string) $district), '-');
 
         if ($candidate !== '' && ! DB::table('villages')->where('slug', $candidate)->exists()) {
             return $candidate;

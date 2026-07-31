@@ -1,7 +1,8 @@
 <?php
 
-use App\Services\VillageProvisioner;
 use App\Rules\ValidCoordinates;
+use App\Services\TenantResolver;
+use App\Services\VillageProvisioner;
 use App\Support\CoordinatePair;
 use App\Support\CurrentVillage;
 use App\Support\PublicSiteCache;
@@ -56,6 +57,7 @@ new class extends Component
         'phone' => '',
         'email' => '',
         'website_url' => '',
+        'public_hostname' => '',
         'api_endpoint_url' => '',
         'sidesi_village_id' => '',
         'analytics_key' => '',
@@ -127,8 +129,13 @@ new class extends Component
     public function save(): void
     {
         $id = $this->form['id'];
+        $oldHostname = $id ? DB::table('villages')->where('id', $id)->value('public_hostname') : null;
         $this->form['regency'] = config('regions.regency');
         $this->form['province'] = config('regions.province');
+        $this->form['public_hostname'] = app(TenantResolver::class)->normalizeHostname(
+            (string) ($this->form['public_hostname']
+                ?: parse_url((string) $this->form['website_url'], PHP_URL_HOST)),
+        );
 
         $data = $this->validate([
             'form.name' => ['required', 'string', 'max:255'],
@@ -137,9 +144,16 @@ new class extends Component
             'form.phone' => ['nullable', 'string', 'max:40'],
             'form.email' => ['nullable', 'email', 'max:255'],
             'form.website_url' => ['nullable', 'url', 'max:2048'],
+            'form.public_hostname' => [
+                'nullable',
+                'string',
+                'max:253',
+                'regex:/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/',
+                Rule::unique('villages', 'public_hostname')->ignore($id),
+            ],
             'form.api_endpoint_url' => ['nullable', 'url', 'max:2048'],
             'form.sidesi_village_id' => ['nullable', 'digits_between:1,20'],
-            'coordinates' => ['nullable', 'string', new ValidCoordinates()],
+            'coordinates' => ['nullable', 'string', new ValidCoordinates],
             'form.welcome_message' => ['nullable', 'string'],
             'form.description' => ['nullable', 'string'],
             'form.vision' => ['nullable', 'string'],
@@ -161,6 +175,8 @@ new class extends Component
         }
 
         VillageFeatures::sync($villageId, $this->selectedFeatures);
+        app(TenantResolver::class)->forget($oldHostname);
+        app(TenantResolver::class)->forget($data['public_hostname'] ?? null);
         PublicSiteCache::forget($villageId);
         $this->showModal = false;
         $this->resetForm();
@@ -230,6 +246,7 @@ new class extends Component
                         ->whereRaw('LOWER(villages.name) LIKE ?', [$search])
                         ->orWhereRaw('LOWER(COALESCE(villages.district, \'\')) LIKE ?', [$search])
                         ->orWhereRaw('LOWER(COALESCE(villages.website_url, \'\')) LIKE ?', [$search])
+                        ->orWhereRaw('LOWER(COALESCE(villages.public_hostname, \'\')) LIKE ?', [$search])
                         ->orWhereRaw('LOWER(COALESCE(villages.sidesi_village_id, \'\')) LIKE ?', [$search]);
                 });
             })
@@ -280,6 +297,7 @@ new class extends Component
             'phone' => '',
             'email' => '',
             'website_url' => '',
+            'public_hostname' => '',
             'api_endpoint_url' => '',
             'sidesi_village_id' => '',
             'analytics_key' => Str::random(64),
@@ -367,6 +385,7 @@ new class extends Component
                                 @else
                                     <span class="text-zinc-400">Belum diatur</span>
                                 @endif
+                                <div class="mt-1 max-w-64 truncate font-mono text-xs text-sky-700">{{ $village['public_hostname'] ?: 'Hostname publik belum diatur' }}</div>
                                 <div class="mt-1 max-w-64 truncate text-xs text-zinc-500">{{ $village['api_endpoint_url'] ?: 'Endpoint belum diatur' }}</div>
                                 <div class="mt-2 font-mono text-xs font-bold {{ $village['sidesi_village_id'] ? 'text-emerald-700' : 'text-red-600' }}">
                                     SIDESI: {{ $village['sidesi_village_id'] ?: 'belum diatur' }}
@@ -442,7 +461,9 @@ new class extends Component
                     <x-admin.input label="Telepon" model="form.phone" />
                     <x-admin.input label="Email" model="form.email" type="email" />
                     <x-admin.input label="URL Website" model="form.website_url" type="url" placeholder="https://desa.example.go.id" class="lg:col-span-2" />
+                    <x-admin.input label="Hostname Publik" model="form.public_hostname" placeholder="desa.example.go.id" />
                     <x-admin.input label="Endpoint API Website" model="form.api_endpoint_url" type="url" placeholder="https://desa.example.go.id/api" />
+                    <p class="-mt-2 text-xs leading-5 text-zinc-500 lg:col-span-3">Hostname harus unik dan tanpa <code>https://</code>, path, atau port. Nilai ini menentukan desa yang ditampilkan oleh frontend multi-tenant.</p>
                     <div class="lg:col-span-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                         <x-admin.input label="ID Desa SIDESI" model="form.sidesi_village_id" inputmode="numeric" placeholder="Contoh: 1610022013" />
                         <p class="mt-2 text-xs leading-5 text-emerald-800">Satu-satunya konfigurasi Peta Sebaran yang perlu diisi. Fasilitas Umum dan Bantuan akan ditarik langsung dari SIDESI Ogan Ilir.</p>

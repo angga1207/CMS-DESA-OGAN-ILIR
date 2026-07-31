@@ -1,11 +1,25 @@
 {
     "application": "Website Desa",
     "component": "Frontend Publik",
-    "current_version": "1.6.7",
+    "current_version": "1.6.8",
     "framework": "Next.js 16",
     "released_at": "2026-07-31",
     "description": "Website publik desa dengan dukungan multi-theme, data realtime, carousel, galeri, peta, statistik, dan modul informasi desa.",
     "releases": [
+        {
+            "version": "1.6.8",
+            "date": "2026-07-31",
+            "status": "stable",
+            "title": "Satu Frontend untuk Banyak Domain Desa",
+            "changes": [
+                "Mengubah pemilihan tenant frontend dari VILLAGE_ID statis menjadi resolusi otomatis berdasarkan hostname request.",
+                "Menerapkan tenant hasil resolusi pada halaman publik, widget, feedback, statistik kunjungan, view artikel, unduhan, dan proxy peta.",
+                "Mempertahankan VILLAGE_ID sebagai fallback lokal dan mode static untuk kompatibilitas deployment lama.",
+                "Menambahkan pemilih tenant khusus localhost berdasarkan ID atau slug dengan penyimpanan cookie lokal.",
+                "Menolak domain yang tidak terdaftar agar tidak terjadi kebocoran konten lintas desa.",
+                "Menambahkan contoh konfigurasi Nginx untuk menjalankan seluruh domain melalui satu proses Next.js."
+            ]
+        },
         {
             "version": "1.6.7",
             "date": "2026-07-31",

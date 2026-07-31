@@ -35,7 +35,7 @@ class ExampleTest extends TestCase
         $this->assertSame('id', config('app.locale'));
         $this->assertTrue(config('livewire-alert.toast'));
         $this->assertSame(4, config('captcha.flat.length'));
-        $this->assertTrue(Schema::hasColumns('villages', ['logo_url', 'favicon_url', 'website_url', 'api_endpoint_url', 'sidesi_village_id', 'analytics_key']));
+        $this->assertTrue(Schema::hasColumns('villages', ['logo_url', 'favicon_url', 'website_url', 'public_hostname', 'api_endpoint_url', 'sidesi_village_id', 'analytics_key']));
         $this->assertTrue(Schema::hasColumn('hero_banners', 'portrait_image_url'));
         $this->assertFalse(Schema::hasTable('map_categories'));
         $this->assertFalse(Schema::hasTable('map_points'));
@@ -1913,6 +1913,7 @@ class ExampleTest extends TestCase
         $this->assertDatabaseHas('villages', [
             'id' => $villageId,
             'website_url' => 'https://desa-a.example.go.id',
+            'public_hostname' => 'desa-a.example.go.id',
             'api_endpoint_url' => 'https://desa-a.example.go.id/api',
             'sidesi_village_id' => '1610022013',
         ]);
