@@ -6,6 +6,41 @@
 @import 'tom-select/dist/css/tom-select.css';
 @import '@fortawesome/fontawesome-free/css/all.css';
 
+@font-face {
+    font-family: 'CMS Libre Baskerville Preview';
+    src: url('../fonts/libre-baskerville-700.ttf') format('truetype');
+    font-display: swap;
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'CMS Montserrat Preview';
+    src: url('../fonts/montserrat-700.ttf') format('truetype');
+    font-display: swap;
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'CMS Nunito Preview';
+    src: url('../fonts/nunito-700.ttf') format('truetype');
+    font-display: swap;
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'CMS Playfair Display Preview';
+    src: url('../fonts/playfair-display-700.ttf') format('truetype');
+    font-display: swap;
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'CMS Lora Preview';
+    src: url('../fonts/lora-700.ttf') format('truetype');
+    font-display: swap;
+    font-weight: 700;
+}
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../views/**/*.blade.php';
@@ -17,6 +52,10 @@
 
 html {
     scroll-behavior: smooth;
+}
+
+[x-cloak] {
+    display: none !important;
 }
 
 .admin-cms {

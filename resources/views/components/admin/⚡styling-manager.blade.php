@@ -124,23 +124,60 @@ new class extends Component {
                 <p class="mt-1 text-sm text-zinc-500">Pilih template dan gaya huruf website publik desa.</p>
             </div>
         </div>
-        <div class="mt-4 grid gap-4 sm:grid-cols-2">
-            <x-admin.select label="Template Website Publik" model="settings.site_theme" :options="[
-                'modern-style-1' => 'Modern Style 1',
-                'modern-style-2' => 'Modern Style 2',
-                'smooth-dynamic-style' => 'Smooth Dynamic Style',
-                'creative-branding' => 'Creative Branding',
-                'cartoon' => 'Cartoon',
-            ]" />
-            <x-admin.select label="Font Style" model="settings.font_style" :options="[
-                'classic' => 'Classic Editorial',
-                'modern' => 'Modern Geometric',
-                'friendly' => 'Friendly Rounded',
-                'cartoon' => 'Cartoon Playful',
-                'elegant' => 'Elegant Display',
-                'literary' => 'Literary Serif',
-                'system' => 'System Clean',
-            ]" />
+        <div class="mt-4 grid gap-6 lg:grid-cols-2">
+            <fieldset>
+                <legend class="admin-field-label"><i class="fa-solid fa-window-maximize text-amber-600"></i>Template Website Publik</legend>
+                <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                    @foreach ([
+                        'modern-style-1' => ['Modern Style 1', 'fa-newspaper'],
+                        'modern-style-2' => ['Modern Style 2', 'fa-layer-group'],
+                        'smooth-dynamic-style' => ['Smooth Dynamic Style', 'fa-water'],
+                        'creative-branding' => ['Creative Branding', 'fa-wand-magic-sparkles'],
+                        'cartoon' => ['Cartoon', 'fa-face-smile-beam'],
+                    ] as $value => [$label, $icon])
+                        <label class="group relative flex min-h-14 items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 transition hover:border-emerald-300 hover:bg-emerald-50/40 has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50 has-[:checked]:ring-2 has-[:checked]:ring-emerald-600/15">
+                            <input type="radio" wire:model.live="settings.site_theme" value="{{ $value }}"
+                                class="peer sr-only">
+                            <span class="grid size-9 shrink-0 place-items-center rounded-md bg-zinc-100 text-zinc-500 transition group-has-[:checked]:bg-emerald-600 group-has-[:checked]:text-white">
+                                <i class="fa-solid {{ $icon }}" aria-hidden="true"></i>
+                            </span>
+                            <span class="text-sm font-bold text-zinc-700">{{ $label }}</span>
+                            <i class="fa-solid fa-circle-check ml-auto hidden text-emerald-600 group-has-[:checked]:block" aria-hidden="true"></i>
+                        </label>
+                    @endforeach
+                </div>
+                @error('settings.site_theme')
+                    <div class="admin-error">{{ $message }}</div>
+                @enderror
+            </fieldset>
+
+            <fieldset>
+                <legend class="admin-field-label"><i class="fa-solid fa-font text-amber-600"></i>Font Style</legend>
+                <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                    @foreach ([
+                        'classic' => ['Classic Editorial', "'CMS Libre Baskerville Preview', Georgia, serif"],
+                        'modern' => ['Modern Geometric', "'CMS Montserrat Preview', Arial, sans-serif"],
+                        'friendly' => ['Friendly Rounded', "'CMS Nunito Preview', Arial, sans-serif"],
+                        'cartoon' => ['Cartoon Playful', "'CMS Nunito Preview', Arial, sans-serif"],
+                        'elegant' => ['Elegant Display', "'CMS Playfair Display Preview', Georgia, serif"],
+                        'literary' => ['Literary Serif', "'CMS Lora Preview', Georgia, serif"],
+                        'system' => ['System Clean', "Arial, Helvetica, sans-serif"],
+                    ] as $value => [$label, $fontFamily])
+                        <label class="group relative flex min-h-16 items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 transition hover:border-emerald-300 hover:bg-emerald-50/40 has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50 has-[:checked]:ring-2 has-[:checked]:ring-emerald-600/15">
+                            <input type="radio" wire:model.live="settings.font_style" value="{{ $value }}"
+                                class="peer sr-only">
+                            <span class="min-w-0">
+                                <span class="block truncate text-base text-zinc-800" style="font-family: {{ $fontFamily }}">Website Desa</span>
+                                <span class="mt-0.5 block text-[11px] font-semibold text-zinc-500">{{ $label }}</span>
+                            </span>
+                            <i class="fa-solid fa-circle-check ml-auto hidden shrink-0 text-emerald-600 group-has-[:checked]:block" aria-hidden="true"></i>
+                        </label>
+                    @endforeach
+                </div>
+                @error('settings.font_style')
+                    <div class="admin-error">{{ $message }}</div>
+                @enderror
+            </fieldset>
         </div>
         <p class="mt-3 text-xs leading-5 text-zinc-500">
             Mengganti template akan langsung menerapkan rekomendasi palet warna dan font. Setelah itu, warna dan font
@@ -153,11 +190,11 @@ new class extends Component {
         <p class="mt-1 text-sm text-zinc-500">Warna diterapkan pada banner, tombol, judul, footer, dan elemen aksen
             frontend.</p>
         <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <x-admin.input label="Primary" model="settings.theme_primary" type="color" />
-            <x-admin.input label="Secondary" model="settings.theme_secondary" type="color" />
-            <x-admin.input label="Tertiary" model="settings.theme_tertiary" type="color" />
-            <x-admin.input label="Latar" model="settings.theme_surface" type="color" />
-            <x-admin.input label="Teks" model="settings.theme_text" type="color" />
+            <x-admin.color-picker label="Primary" model="settings.theme_primary" icon="fa-droplet" />
+            <x-admin.color-picker label="Secondary" model="settings.theme_secondary" icon="fa-fill-drip" />
+            <x-admin.color-picker label="Tertiary" model="settings.theme_tertiary" icon="fa-brush" />
+            <x-admin.color-picker label="Latar" model="settings.theme_surface" icon="fa-clone" align="right" />
+            <x-admin.color-picker label="Teks" model="settings.theme_text" icon="fa-font" align="right" />
         </div>
 
     </section>

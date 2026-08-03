@@ -1,11 +1,24 @@
 {
     "application": "CMS Desa",
     "component": "Backend CMS",
-    "current_version": "1.7.5",
+    "current_version": "1.7.6",
     "framework": "Laravel 13",
-    "released_at": "2026-07-31",
+    "released_at": "2026-08-03",
     "description": "Panel administrasi untuk mengelola desa, konten, pengguna, tema, widget, dan integrasi data publik.",
     "releases": [
+        {
+            "version": "1.7.6",
+            "date": "2026-08-03",
+            "status": "stable",
+            "title": "Patch Banner dan Styling Website",
+            "changes": [
+                "Menambahkan aksi hapus gambar portrait langsung dari form Edit Banner beserta penghapusan file, pembaruan data tenant, dan invalidasi cache website publik.",
+                "Mengubah pilihan Template Website Publik menjadi kartu visual dengan ikon dan indikator opsi aktif.",
+                "Menampilkan contoh Font Style menggunakan jenis font lokal yang sama dengan tipografi frontend publik.",
+                "Mengganti input Palet Warna native dengan color picker modern berisi preview warna, palet cepat, pemilih warna kustom, dan input kode HEX.",
+                "Menambahkan pengujian regresi untuk penghapusan portrait Banner serta render opsi template, font, dan color picker Styling Website."
+            ]
+        },
         {
             "version": "1.7.5",
             "date": "2026-07-31",

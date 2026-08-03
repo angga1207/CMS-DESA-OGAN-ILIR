@@ -132,6 +132,41 @@ new class extends Component {
         $this->loadData();
     }
 
+    public function deletePortraitImage(): void
+    {
+        $bannerId = (int) ($this->form['id'] ?? 0);
+
+        if (!$bannerId) {
+            return;
+        }
+
+        $banner = DB::table('hero_banners')
+            ->where('village_id', $this->villageId)
+            ->where('id', $bannerId)
+            ->first();
+
+        if (!$banner || !$banner->portrait_image_url) {
+            return;
+        }
+
+        app(OptimizedImageStorage::class)->delete($banner->portrait_image_url);
+
+        DB::table('hero_banners')
+            ->where('village_id', $this->villageId)
+            ->where('id', $bannerId)
+            ->update([
+                'portrait_image_url' => null,
+                'updated_at' => now(),
+            ]);
+
+        $this->reset('portraitImageUpload');
+        $this->form['portrait_image_url'] = '';
+        PublicSiteCache::forget($this->villageId);
+        $this->loadData();
+
+        LivewireAlert::title('Dihapus')->text('Gambar portrait banner berhasil dihapus.')->success()->timer(1200)->show();
+    }
+
     private function loadData(): void
     {
         $this->banners = DB::table('hero_banners')->where('village_id', $this->villageId)->orderBy('sort_order')->orderByDesc('created_at')->get()->map(fn($row): array => (array) $row)->all();
@@ -270,8 +305,16 @@ new class extends Component {
                                 <img src="{{ $portraitImageUpload->temporaryUrl() }}" alt="Preview banner mobile"
                                     class="mt-2 h-36 w-full rounded-md object-cover">
                             @elseif($form['portrait_image_url'])
-                                <img src="{{ $form['portrait_image_url'] }}" alt="Banner mobile saat ini"
-                                    class="mt-2 h-36 w-full rounded-md object-cover">
+                                <div class="relative mt-2 overflow-hidden rounded-md">
+                                    <img src="{{ $form['portrait_image_url'] }}" alt="Banner mobile saat ini"
+                                        class="h-36 w-full object-cover">
+                                    <button type="button" wire:click="deletePortraitImage"
+                                        wire:confirm="Hapus gambar portrait banner ini? Tampilan mobile akan menggunakan gambar landscape."
+                                        wire:loading.attr="disabled" wire:target="deletePortraitImage"
+                                        class="absolute bottom-2 right-2 inline-flex min-h-10 items-center gap-2 rounded-md bg-red-600 px-3 text-xs font-black text-white shadow-lg disabled:opacity-60">
+                                        <i class="fa-solid fa-trash"></i>Hapus Portrait
+                                    </button>
+                                </div>
                             @else
                                 <div
                                     class="mt-2 grid h-36 place-items-center rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-4 text-center text-xs text-zinc-500">

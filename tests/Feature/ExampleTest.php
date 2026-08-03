@@ -264,6 +264,18 @@ class ExampleTest extends TestCase
             ->assertSee('Modern Style 1')
             ->assertSee('Modern Style 2')
             ->assertSee('Smooth Dynamic Style')
+            ->assertSee('fa-newspaper', false)
+            ->assertSee('fa-wand-magic-sparkles', false)
+            ->assertSee('Classic Editorial')
+            ->assertSee('CMS Libre Baskerville Preview', false)
+            ->assertSee('CMS Montserrat Preview', false)
+            ->assertSee('CMS Nunito Preview', false)
+            ->assertSee('CMS Playfair Display Preview', false)
+            ->assertSee('CMS Lora Preview', false)
+            ->assertSee('Warna kustom')
+            ->assertSee('Pilihan warna Primary')
+            ->assertSee('Kode HEX Primary')
+            ->assertSee('settings.theme_primary', false)
             ->assertSee('Preview Frontend')
             ->assertSee('about:blank')
             ->assertDontSee('Label & Link di Bawah Banner', false);
@@ -629,7 +641,7 @@ class ExampleTest extends TestCase
             ->assertStatus(200)
             ->assertSee('Pengaturan Desa')
             ->assertSee('CMS Backend')
-            ->assertSee('v1.4.1')
+            ->assertSee('v'.ApplicationVersions::backend()['current_version'])
             ->assertSee('Desa Beta');
 
         $this->actingAs($developer)->post('/admin/village-context', [
@@ -648,6 +660,8 @@ class ExampleTest extends TestCase
         $this->seed();
 
         $developer = User::query()->where('username', 'developer')->first();
+        $backend = ApplicationVersions::backend();
+        $frontend = ApplicationVersions::frontend();
 
         $this->actingAs($developer)
             ->get('/admin/application-versions')
@@ -657,10 +671,10 @@ class ExampleTest extends TestCase
             ->assertSee('Frontend Publik')
             ->assertSee('cms-backend.json')
             ->assertSee('public-frontend.json')
-            ->assertSee('v1.6.4')
+            ->assertSee('v'.$backend['current_version'])
+            ->assertSee('v'.$frontend['current_version'])
             ->assertSee('backend_page=2', false)
             ->assertSee('frontend_page=2', false)
-            ->assertDontSee('v1.4.1')
             ->assertDontSee('Tambah Versi')
             ->assertDontSee('Simpan Versi')
             ->assertDontSee('Hapus Versi');
@@ -668,8 +682,8 @@ class ExampleTest extends TestCase
         $this->actingAs($developer)
             ->get('/admin/application-versions?backend_page=3')
             ->assertOk()
-            ->assertSee('v1.4.1')
-            ->assertSee('v1.6.4');
+            ->assertSee('v'.$backend['releases'][10]['version'])
+            ->assertSee('v'.$frontend['current_version']);
     }
 
     public function test_authenticated_user_can_update_profile_and_change_password(): void
@@ -1699,7 +1713,8 @@ class ExampleTest extends TestCase
         $villageId = (int) DB::table('villages')->value('id');
         $bannerId = (int) DB::table('hero_banners')->where('village_id', $villageId)->value('id');
 
-        $this->actingAs($developer);
+        $this->actingAs($developer)
+            ->withSession(['active_village_id' => $villageId]);
 
         Livewire::test('admin.banner-manager')
             ->call('edit', $bannerId)
@@ -1718,6 +1733,45 @@ class ExampleTest extends TestCase
 
         $this->getJson("/api/villages/{$villageId}/site")
             ->assertJsonPath('data.banners.0.portrait_image_url', $banner->portrait_image_url);
+    }
+
+    public function test_admin_can_delete_a_saved_banner_portrait_image_while_editing(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+
+        $developer = User::query()->where('username', 'developer')->first();
+        $villageId = (int) DB::table('villages')->value('id');
+        $bannerId = (int) DB::table('hero_banners')->where('village_id', $villageId)->value('id');
+
+        $this->actingAs($developer)
+            ->withSession(['active_village_id' => $villageId]);
+
+        Livewire::test('admin.banner-manager')
+            ->call('edit', $bannerId)
+            ->set('portraitImageUpload', UploadedFile::fake()->image('mobile.jpg', 1200, 1800))
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $portraitUrl = DB::table('hero_banners')->where('id', $bannerId)->value('portrait_image_url');
+        $portraitPath = str_replace('/storage/', '', parse_url($portraitUrl, PHP_URL_PATH));
+        Storage::disk('public')->assertExists($portraitPath);
+
+        Livewire::test('admin.banner-manager')
+            ->call('edit', $bannerId)
+            ->assertSet('form.portrait_image_url', $portraitUrl)
+            ->call('deletePortraitImage')
+            ->assertSet('form.portrait_image_url', '');
+
+        $this->assertDatabaseHas('hero_banners', [
+            'id' => $bannerId,
+            'village_id' => $villageId,
+            'portrait_image_url' => null,
+        ]);
+        Storage::disk('public')->assertMissing($portraitPath);
+
+        $this->getJson("/api/villages/{$villageId}/site")
+            ->assertJsonPath('data.banners.0.portrait_image_url', null);
     }
 
     public function test_visitor_endpoint_counts_unique_and_total_visits_per_day(): void
