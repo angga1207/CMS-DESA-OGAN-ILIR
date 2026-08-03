@@ -107,6 +107,17 @@ Tambahkan isi [`deploy/nginx/livewire.conf`](deploy/nginx/livewire.conf) ke
 server block aplikasi **sebelum** location regex file statis, lalu validasi dan
 reload Nginx:
 
+Untuk upload berkas Unduhan sampai 50 MB, pastikan server block Nginx juga
+memiliki:
+
+```nginx
+client_max_body_size 50M;
+```
+
+Nilai aplikasi dapat diubah melalui `DOCUMENT_UPLOAD_MAX_MB` dan harus tetap
+lebih kecil atau sama dengan `upload_max_filesize`, `post_max_size`, serta
+`client_max_body_size` pada server.
+
 ```bash
 sudo nginx -t
 sudo systemctl reload nginx

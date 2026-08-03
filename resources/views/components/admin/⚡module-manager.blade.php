@@ -9,11 +9,13 @@ use App\Support\UniqueSlug;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
-new class extends Component {
+new class extends Component
+{
     use WithFileUploads;
 
     public string $module;
@@ -83,7 +85,7 @@ new class extends Component {
         $this->resetValidation();
         $row = DB::table($this->table())->where('village_id', $this->villageId)->where('id', $id)->first();
 
-        if (!$row) {
+        if (! $row) {
             return;
         }
 
@@ -167,10 +169,10 @@ new class extends Component {
         $photo = DB::table($this->photoTable())
             ->where('village_id', $this->villageId)
             ->where('id', $id)
-            ->when($this->form['id'] ?? null, fn($query, $businessId) => $query->where($this->photoForeignKey(), $businessId))
+            ->when($this->form['id'] ?? null, fn ($query, $businessId) => $query->where($this->photoForeignKey(), $businessId))
             ->first();
 
-        if (!$photo) {
+        if (! $photo) {
             return;
         }
 
@@ -198,9 +200,9 @@ new class extends Component {
 
     private function loadData(): void
     {
-        $this->businessCategories = DB::table('business_categories')->where('village_id', $this->villageId)->orderBy('name')->get()->map(fn($row): array => (array) $row)->all();
-        $this->bumdesCategories = DB::table('bumdes_categories')->where('village_id', $this->villageId)->orderBy('name')->get()->map(fn($row): array => (array) $row)->all();
-        $this->desaCantikCategories = DB::table('desa_cantik_categories')->where('village_id', $this->villageId)->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get()->map(fn($row): array => (array) $row)->all();
+        $this->businessCategories = DB::table('business_categories')->where('village_id', $this->villageId)->orderBy('name')->get()->map(fn ($row): array => (array) $row)->all();
+        $this->bumdesCategories = DB::table('bumdes_categories')->where('village_id', $this->villageId)->orderBy('name')->get()->map(fn ($row): array => (array) $row)->all();
+        $this->desaCantikCategories = DB::table('desa_cantik_categories')->where('village_id', $this->villageId)->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get()->map(fn ($row): array => (array) $row)->all();
 
         if ($this->module === 'businesses') {
             $this->title = 'UMKM';
@@ -209,7 +211,7 @@ new class extends Component {
             $this->applySearch($query, ['businesses.name', 'businesses.slug', 'businesses.owner_name', 'businesses.whatsapp', 'businesses.hamlet', 'businesses.address', 'businesses.description', 'business_categories.name']);
             $this->totalRows = (clone $query)->count('businesses.id');
             $this->page = min($this->page, max((int) ceil($this->totalRows / $this->perPage), 1));
-            $this->rows = $query->select('businesses.*', 'business_categories.name as category_name')->orderByDesc('businesses.updated_at')->forPage($this->page, $this->perPage)->get()->map(fn($row): array => (array) $row)->all();
+            $this->rows = $query->select('businesses.*', 'business_categories.name as category_name')->orderByDesc('businesses.updated_at')->forPage($this->page, $this->perPage)->get()->map(fn ($row): array => (array) $row)->all();
         } elseif ($this->module === 'bumdes') {
             $this->title = 'BUMDES';
             $this->columns = ['thumbnail' => 'Foto', 'name' => 'BUMDES', 'category_name' => 'Kategori', 'manager_name' => 'Pengelola', 'coordinates' => 'Lokasi', 'social_media' => 'Media Sosial'];
@@ -217,7 +219,7 @@ new class extends Component {
             $this->applySearch($query, ['bumdes.name', 'bumdes.slug', 'bumdes.manager_name', 'bumdes.whatsapp', 'bumdes.address', 'bumdes.description', 'bumdes_categories.name']);
             $this->totalRows = (clone $query)->count('bumdes.id');
             $this->page = min($this->page, max((int) ceil($this->totalRows / $this->perPage), 1));
-            $this->rows = $query->select('bumdes.*', 'bumdes_categories.name as category_name')->orderByDesc('bumdes.updated_at')->forPage($this->page, $this->perPage)->get()->map(fn($row): array => (array) $row)->all();
+            $this->rows = $query->select('bumdes.*', 'bumdes_categories.name as category_name')->orderByDesc('bumdes.updated_at')->forPage($this->page, $this->perPage)->get()->map(fn ($row): array => (array) $row)->all();
         } elseif ($this->module === 'projects') {
             $this->title = 'Pembangunan';
             $this->columns = ['thumbnail' => 'Foto', 'title' => 'Judul', 'year' => 'Tahun', 'source_fund' => 'Sumber', 'progress_percentage' => 'Progress', 'coordinates' => 'Lokasi'];
@@ -225,7 +227,7 @@ new class extends Component {
             $this->applySearch($query, ['title', 'slug', 'year', 'location', 'source_fund', 'volume', 'status', 'description']);
             $this->totalRows = (clone $query)->count();
             $this->page = min($this->page, max((int) ceil($this->totalRows / $this->perPage), 1));
-            $this->rows = $query->orderByDesc('year')->forPage($this->page, $this->perPage)->get()->map(fn($row): array => (array) $row)->all();
+            $this->rows = $query->orderByDesc('year')->forPage($this->page, $this->perPage)->get()->map(fn ($row): array => (array) $row)->all();
         } elseif ($this->module === 'files') {
             $this->title = 'Unduhan Berkas';
             $this->columns = ['title' => 'Judul', 'file_url' => 'Berkas', 'published_at' => 'Tanggal Publish'];
@@ -233,7 +235,7 @@ new class extends Component {
             $this->applySearch($query, ['title', 'slug', 'description', 'file_url', 'published_at']);
             $this->totalRows = (clone $query)->count();
             $this->page = min($this->page, max((int) ceil($this->totalRows / $this->perPage), 1));
-            $this->rows = $query->orderByDesc('published_at')->forPage($this->page, $this->perPage)->get()->map(fn($row): array => (array) $row)->all();
+            $this->rows = $query->orderByDesc('published_at')->forPage($this->page, $this->perPage)->get()->map(fn ($row): array => (array) $row)->all();
         } elseif ($this->module === 'desa-cantik') {
             $this->title = 'Desa Cantik';
             $this->columns = ['thumbnail' => 'Preview', 'title' => 'Judul', 'category_name' => 'Kategori', 'content_type' => 'Jenis', 'published_at' => 'Tanggal', 'is_published' => 'Status'];
@@ -246,7 +248,7 @@ new class extends Component {
                 ->orderByDesc('desa_cantik_posts.updated_at')
                 ->forPage($this->page, $this->perPage)
                 ->get(['desa_cantik_posts.*', 'desa_cantik_categories.name as category_name', 'desa_cantik_categories.type as category_type'])
-                ->map(fn($row): array => (array) $row)
+                ->map(fn ($row): array => (array) $row)
                 ->all();
         }
     }
@@ -257,10 +259,10 @@ new class extends Component {
             return;
         }
 
-        $search = '%' . strtolower(trim($this->search)) . '%';
+        $search = '%'.strtolower(trim($this->search)).'%';
         $query->where(function ($query) use ($columns, $search): void {
             foreach ($columns as $column) {
-                $query->orWhereRaw('LOWER(COALESCE(' . $this->searchExpression($column) . ", '')) LIKE ?", [$search]);
+                $query->orWhereRaw('LOWER(COALESCE('.$this->searchExpression($column).", '')) LIKE ?", [$search]);
             }
         });
     }
@@ -300,7 +302,7 @@ new class extends Component {
                 'form.facebook_url' => ['nullable', 'url', 'max:2048'],
                 'form.tiktok_url' => ['nullable', 'url', 'max:2048'],
                 'form.address' => ['nullable', 'string'],
-                'form.coordinates' => ['nullable', 'string', new ValidCoordinates()],
+                'form.coordinates' => ['nullable', 'string', new ValidCoordinates],
                 'form.worker_count' => ['required', 'integer', 'min:0'],
                 'form.is_active' => ['boolean'],
                 'businessImageUpload' => ['nullable', 'image', 'max:4096'],
@@ -351,7 +353,7 @@ new class extends Component {
                 'form.facebook_url' => ['nullable', 'url', 'max:2048'],
                 'form.tiktok_url' => ['nullable', 'url', 'max:2048'],
                 'form.address' => ['nullable', 'string'],
-                'form.coordinates' => ['nullable', 'string', new ValidCoordinates()],
+                'form.coordinates' => ['nullable', 'string', new ValidCoordinates],
                 'form.worker_count' => ['required', 'integer', 'min:0'],
                 'form.is_active' => ['boolean'],
                 'businessImageUpload' => ['nullable', 'image', 'max:4096'],
@@ -396,7 +398,7 @@ new class extends Component {
             [
                 'form.title' => ['required', 'string', 'max:255'],
                 'form.year' => ['required', 'integer', 'between:1900,2100'],
-                'form.coordinates' => ['nullable', 'string', new ValidCoordinates()],
+                'form.coordinates' => ['nullable', 'string', new ValidCoordinates],
                 'form.budget_amount' => ['required', 'numeric', 'min:0'],
                 'form.progress_percentage' => ['required', 'numeric', 'between:0,100'],
                 'projectImageUpload' => ['nullable', 'image', 'max:4096'],
@@ -425,10 +427,12 @@ new class extends Component {
 
     private function saveFile(): void
     {
+        $documentMaxKilobytes = max(1, (int) config('uploads.document_max_mb', 50)) * 1024;
+
         $this->validate(
             [
                 'form.title' => ['required', 'string', 'max:250'],
-                'documentUpload' => ['nullable', 'required_without:form.id', 'file', 'max:10240'],
+                'documentUpload' => ['nullable', 'required_without:form.id', 'file', "max:{$documentMaxKilobytes}"],
                 'form.description' => ['nullable', 'string'],
             ],
             [
@@ -442,7 +446,23 @@ new class extends Component {
         );
 
         if ($this->documentUpload) {
-            $this->form['file_url'] = Storage::url($this->documentUpload->store('download-files', 'public'));
+            try {
+                $storedPath = $this->documentUpload->store('download-files', 'public');
+            } catch (Throwable $exception) {
+                report($exception);
+
+                throw ValidationException::withMessages([
+                    'documentUpload' => 'Berkas gagal disimpan. Periksa izin folder storage dan coba kembali.',
+                ]);
+            }
+
+            if (! is_string($storedPath) || ! Storage::disk('public')->exists($storedPath)) {
+                throw ValidationException::withMessages([
+                    'documentUpload' => 'Berkas gagal disimpan ke storage publik.',
+                ]);
+            }
+
+            $this->form['file_url'] = Storage::disk('public')->url($storedPath);
         }
 
         $this->upsert('downloadable_files', [...$this->form, 'village_id' => $this->villageId, 'slug' => UniqueSlug::make('downloadable_files', $this->form['title'], $this->form['id']), 'is_published' => (bool) $this->form['is_published']]);
@@ -484,7 +504,7 @@ new class extends Component {
             $this->form['file_url'] = '';
             $this->form['external_url'] = '';
         } elseif ($categoryType === 'publication') {
-            if (!in_array($this->form['content_type'], ['pdf', 'url', 'fliphtml'], true)) {
+            if (! in_array($this->form['content_type'], ['pdf', 'url', 'fliphtml'], true)) {
                 $this->form['content_type'] = 'pdf';
             }
         } else {
@@ -493,19 +513,19 @@ new class extends Component {
             return;
         }
 
-        if ($this->form['content_type'] === 'image' && !$this->desaCantikImageUpload && !$this->form['image_url']) {
+        if ($this->form['content_type'] === 'image' && ! $this->desaCantikImageUpload && ! $this->form['image_url']) {
             $this->addError('desaCantikImageUpload', 'Gambar wajib diunggah untuk kategori Infografis.');
 
             return;
         }
 
-        if ($this->form['content_type'] === 'pdf' && !$this->desaCantikDocumentUpload && !$this->form['file_url']) {
+        if ($this->form['content_type'] === 'pdf' && ! $this->desaCantikDocumentUpload && ! $this->form['file_url']) {
             $this->addError('desaCantikDocumentUpload', 'File PDF wajib diunggah untuk publikasi PDF.');
 
             return;
         }
 
-        if (in_array($this->form['content_type'], ['url', 'fliphtml'], true) && !filter_var($this->extractUrl($this->form['external_url']), FILTER_VALIDATE_URL)) {
+        if (in_array($this->form['content_type'], ['url', 'fliphtml'], true) && ! filter_var($this->extractUrl($this->form['external_url']), FILTER_VALIDATE_URL)) {
             $this->addError('form.external_url', 'URL publikasi wajib berupa alamat yang valid.');
 
             return;
@@ -555,7 +575,7 @@ new class extends Component {
 
     private function loadBusinessPhotos(int $businessId): void
     {
-        $this->businessPhotos = DB::table($this->photoTable())->where('village_id', $this->villageId)->where($this->photoForeignKey(), $businessId)->orderBy('sort_order')->orderBy('id')->get()->map(fn($row): array => (array) $row)->all();
+        $this->businessPhotos = DB::table($this->photoTable())->where('village_id', $this->villageId)->where($this->photoForeignKey(), $businessId)->orderBy('sort_order')->orderBy('id')->get()->map(fn ($row): array => (array) $row)->all();
     }
 
     private function storeBusinessPhotos(int $businessId): void
@@ -643,7 +663,7 @@ new class extends Component {
             DB::table('bumdes_categories')->insert([
                 'village_id' => $this->villageId,
                 'name' => $name,
-                'slug' => UniqueSlug::make('bumdes_categories', $slug . '-' . $this->villageId),
+                'slug' => UniqueSlug::make('bumdes_categories', $slug.'-'.$this->villageId),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -667,7 +687,7 @@ new class extends Component {
             DB::table('desa_cantik_categories')->insert([
                 'village_id' => $this->villageId,
                 'name' => $name,
-                'slug' => UniqueSlug::make('desa_cantik_categories', $slug . '-' . $this->villageId),
+                'slug' => UniqueSlug::make('desa_cantik_categories', $slug.'-'.$this->villageId),
                 'type' => $type,
                 'sort_order' => $sortOrder,
                 'is_active' => true,
@@ -1015,12 +1035,16 @@ new class extends Component {
                         </div>
                         <div class="lg:col-span-3">
                             <label class="admin-field-label">Berkas Unduhan</label>
-                            <input type="file" wire:model="documentUpload" class="admin-control mt-1">
+                            <input type="file" wire:model="documentUpload"
+                                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
+                                class="admin-control mt-1">
                             @error('documentUpload')
                                 <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                             @enderror
                             <div wire:loading wire:target="documentUpload" class="mt-1 text-sm text-zinc-500">
                                 Mengunggah berkas...</div>
+                            <p class="mt-1 text-xs text-zinc-500">Maksimal {{ config('uploads.document_max_mb', 50) }} MB. Format umum dokumen, spreadsheet,
+                                presentasi, teks, ZIP, dan RAR didukung.</p>
                             @if ($form['file_url'])
                                 <a href="{{ $form['file_url'] }}" target="_blank"
                                     class="mt-2 inline-flex text-sm font-bold text-emerald-700">Lihat berkas saat

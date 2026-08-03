@@ -11,7 +11,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $documentMaxKilobytes = max(1, (int) config('uploads.document_max_mb', 50)) * 1024;
+
+        config()->set('livewire.temporary_file_upload.rules', [
+            'required',
+            'file',
+            "max:{$documentMaxKilobytes}",
+        ]);
     }
 
     /**

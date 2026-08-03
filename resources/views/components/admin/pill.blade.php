@@ -31,7 +31,7 @@
             in_array($normalized, ['draft', 'planned', 'inactive'], true) => 'fa-solid fa-times-circle',
             in_array($normalized, ['in_progress', 'dinas luar'], true) => 'fa-solid fa-clock',
             in_array($normalized, ['announcement', 'article'], true) => 'fa-solid fa-newspaper',
-            $normalized === 'developer' => 'fa-solid fa-code-bracket-square',
+            $normalized === 'developer' => 'fa-solid fa-shield-alt',
             in_array($normalized, ['admin_desa', 'editor', 'pengawas'], true) => 'fa-solid fa-user-group',
             $type === 'category' => 'fa-solid fa-tag',
             default => null,
@@ -52,7 +52,7 @@
 @endphp
 
 <span
-    {{ $attributes->class("inline-flex max-w-full items-center rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset {$tone}") }}>
+    {{ $attributes->class("whitespace-nowrap inline-flex max-w-full items-center rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset {$tone}") }}>
     @if ($icon)
         <i class="{{ $icon }} mr-1"></i>
     @endif

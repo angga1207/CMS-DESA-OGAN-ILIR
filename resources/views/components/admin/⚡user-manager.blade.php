@@ -271,7 +271,7 @@ new class extends Component
                     @forelse($users as $user)
                         <tr>
                             <td class="px-5 py-4 font-bold">{{ $user['name'] }}</td>
-                            <td class="px-5 py-4">{{ $user['username'] }}</td>
+                            <td class="px-5 py-4">{{ '@'.$user['username'] }}</td>
                             <td class="px-5 py-4">{{ $user['email'] }}</td>
                             @if ($this->isDeveloper())
                                 <td class="px-5 py-4">{{ $user['village_name'] ?: '-' }}</td>

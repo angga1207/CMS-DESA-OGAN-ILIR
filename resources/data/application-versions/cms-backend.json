@@ -1,11 +1,25 @@
 {
     "application": "CMS Desa",
     "component": "Backend CMS",
-    "current_version": "1.7.4",
+    "current_version": "1.7.5",
     "framework": "Laravel 13",
     "released_at": "2026-07-31",
     "description": "Panel administrasi untuk mengelola desa, konten, pengguna, tema, widget, dan integrasi data publik.",
     "releases": [
+        {
+            "version": "1.7.5",
+            "date": "2026-07-31",
+            "status": "stable",
+            "title": "Perbaikan Upload Berkas Unduhan",
+            "changes": [
+                "Memperbaiki error tampilan setelah upload dengan regenerasi cache Blade CMS.",
+                "Memastikan berkas benar-benar tersimpan pada disk publik sebelum data Unduhan dimasukkan ke database.",
+                "Menampilkan pesan validasi yang jelas ketika storage publik tidak dapat menulis berkas.",
+                "Menyelaraskan batas upload sementara Livewire dan validasi berkas Unduhan menjadi 50 MB yang dapat diatur melalui environment.",
+                "Menambahkan informasi batas ukuran dan pilihan format dokumen umum pada input upload.",
+                "Menambahkan pengujian end-to-end Livewire menggunakan PDF 20 MB dan verifikasi keberadaan berkas."
+            ]
+        },
         {
             "version": "1.7.4",
             "date": "2026-07-31",
